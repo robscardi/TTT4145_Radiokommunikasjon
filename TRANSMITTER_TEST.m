@@ -1,4 +1,7 @@
 %% Initialize Pluto
+close all
+clear variables
+
 %rx = sdrrx('Pluto', ...
 %            'CenterFrequency',915e6, ...
 %            'BasebandSampleRate',1e6);

@@ -1,4 +1,6 @@
-%% Pluto Init
+%% Pluto Init 
+close all
+clear variables
 
 rx = sdrrx('Pluto');
 
@@ -11,10 +13,12 @@ end
 %% Reciver Config
 rx.CenterFrequency = 2.415e9;
 rx.BasebandSampleRate = 2e6;
+L =20000;
+rx.SamplesPerFrame = L;
+freq = (-L/2:L/2 -1)*(1/rx.BasebandSampleRate) + rx.CenterFrequency
 
 figure;
 
-for i = 0:1:100
     data = rx()
-    plot(real(data));
-end
+    f = fftshift(fft(complex(data)));
+    plot(freq, abs(f)/length(f));
