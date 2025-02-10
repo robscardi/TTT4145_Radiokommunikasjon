@@ -45,7 +45,15 @@ FSL = (lambda/(4*pi*d))^2;
 FSL_dB = 10*log10(FSL);
 T = 290;
 N_floor = 10*log10(k*T);
-Noise_floor_transm = -156; %dBm/hz
-Bandwidth = 20*MHz;
+Noise_floor_transm = -70/300*kHz %dBm/hz
+%Bandwidth = 20*MHz;
 
-NF_transm = Noise_floor_transm -174 + 10*log10(Bandwidth);
+%NF_transm = Noise_floor_transm -174 + 10*log10(Bandwidth);
+G_ant = 2.1;
+N=30;
+d_0=1;
+R_dB=10*log10(R)
+
+Eirp=maximum_output_power+G_ant
+L_0=FSL_dB-N*log10(d/d_0)
+LB_N0=Eirp+L_0+G_ant-Noise_floor_transm-R_dB
