@@ -37,6 +37,8 @@ grid on;
 
 
 maximum_output_power = 7.5; % dBm
+output_power_900 = 0 +30;
+output_power_24 = 
 tran_power = 10^(maximum_output_power/10);
 k = 1.38e-23;
 c = 3e8;
