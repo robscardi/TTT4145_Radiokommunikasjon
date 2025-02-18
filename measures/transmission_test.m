@@ -1,25 +1,50 @@
+<<<<<<< HEAD
     %% Initialize Pluto
 %rx = sdrrx('Pluto', ...
 %            'CenterFrequency',915e6, ...
 %            'BasebandSampleRate',1e6);
 tx = sdrtx('Pluto');
+=======
+
+clearvars -except Param
+close all
+
+
+>>>>>>> eb733dfeb9c67321676e0f03637e2e534c03c48b
 %Check if its connected
 plutoInfo = findPlutoRadio;
 if (plutoInfo.SerialNum == 0)
     return
 end
-%% Waveform Code
-fs = 2e6;
-sw = dsp.SineWave;
-sw.Amplitude = 0.5;
-sw.Frequency = 100e3;
-sw.ComplexOutput = true;
-sw.SampleRate = fs;
-sw.SamplesPerFrame = 5000;
-txWaveform = sw(); 
+Fs = 60e6; 								 % Specify the sample rate of the waveform in Hz
+
 %% Program Code
-tx.CenterFrequency = 2.400e9;
-tx.BasebandSampleRate = fs;
+
+%%
+% QAM configuration
+M = 16; 	 % Modulation order
+% input bit source:
+in = randi([0, 1], 600000, 1);
+
+% Generation
+waveform = qammod(in, M, 'bin', 'InputType', 'bit', 'UnitAveragePower', true);
+
+% Filtering:
+rcFilter = comm.RaisedCosineTransmitFilter('Shape', 'Normal', ...
+    'RolloffFactor', 0.1, ...
+    'OutputSamplesPerSymbol', 5, ...
+    'FilterSpanInSymbols', 32);
+waveform = rcFilter(waveform);
+
+start_freq = 2.4e9;
+stop_freq = 2.8e9;
+delta_freq = stop_freq-start_freq;
+k = ceil(delta_freq/Fs);
+T = timer('TimerFcn',@(~,~)disp(tx.CenterFrequency),'StartDelay',5);
+
+
+tx = sdrtx('Pluto', CenterFrequency=2.45e9, ...
+    BasebandSampleRate=Fs, ShowAdvancedProperties=true);
 tx.Gain = 0;
-transmitRepeat(tx,txWaveform);
-%% Reciver Experiment Lol
+transmitRepeat(tx, waveform);
+
