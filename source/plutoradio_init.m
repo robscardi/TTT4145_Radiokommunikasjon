@@ -68,13 +68,29 @@ for i = 1 : SimParams.NumberOfMessage
     SimParams.BerMask( (i-1) * length(SimParams.Message) * 7 + ( 1: length(SimParams.Message) * 7) ) = ...
         (i-1) * SimParams.MessageLength * 7 + (1: length(SimParams.Message) * 7);
 end
-% Pluto receiver parameters
-SimParams.PlutoCenterFrequency      = 915e6;
+%% Pluto receiver parameters
+SimParams.PlutoCenterFrequency      = 928e6;
 SimParams.PlutoGain                 = 30;
 SimParams.PlutoFrontEndSampleRate   = SimParams.Fs;
 SimParams.PlutoFrameLength          = SimParams.Interpolation * SimParams.FrameSize;
 
-% Experiment parameters
+%% Experiment parameters
 SimParams.PlutoFrameTime = SimParams.PlutoFrameLength / SimParams.PlutoFrontEndSampleRate;
 SimParams.StopTime = 10;
+%% Channel Parameters
+SimParams.ChannelSpacing = 12.5;
+Band900 = [902 928];
+Band24 = [2.4 2.5]*1e3;
+SimParams.Channels = [Band900(1):SimParams.ChannelSpacing:Band900(2) ...
+    Band24(1):SimParams.ChannelSpacing:Band24(2) ] ...
+    + SimParams.ChannelSpacing/2;
+%% Protocol specifications
+    %% Preables
+    SimParams.Preable.LSF = [+3 -3];
+    SimParams.Preable.BERT = [-3 +3];
+    %% Sinc Burst 
+    SimParams.SincBurst.LSF = demod_wrap([+3, +3, +3, +3, -3, -3, +3, -3],"bit");
+    SimParams.SincBurst.BERT = demod_wrap([-3, +3, -3, -3, +3, +3, +3, +3],"bit");
+    SimParams.SincBurst.Stream = demod_wrap([-3, -3, -3, -3, +3, +3, -3, +3], "bit");
+    SimParams.SincBurst.Packet = demod_wrap([+3, -3, +3, +3, -3, -3, -3, -3], "bit");
 end 
