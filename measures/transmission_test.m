@@ -1,8 +1,16 @@
+<<<<<<< HEAD
+    %% Initialize Pluto
+%rx = sdrrx('Pluto', ...
+%            'CenterFrequency',915e6, ...
+%            'BasebandSampleRate',1e6);
+tx = sdrtx('Pluto');
+=======
 
 clearvars -except Param
 close all
 
 
+>>>>>>> eb733dfeb9c67321676e0f03637e2e534c03c48b
 %Check if its connected
 plutoInfo = findPlutoRadio;
 if (plutoInfo.SerialNum == 0)
