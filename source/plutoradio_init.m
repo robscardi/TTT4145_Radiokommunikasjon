@@ -7,7 +7,7 @@ function SimParams = init
 SimParams.Rsym = 0.2e6;             % Symbol rate in Hertz
 SimParams.ModulationOrder = 4;      % QPSK alphabet size
 SimParams.SymbolBitNumber = log2(SimParams.ModulationOrder);
-SimParams.Interpolation = 20;        % Interpolation factor
+SimParams.Interpolation = 2;        % Interpolation factor
 SimParams.Decimation = 1;           % Decimation factor
 SimParams.Tsym = 1/SimParams.Rsym;  % Symbol time in sec
 SimParams.Fs   = SimParams.Rsym * SimParams.Interpolation; % Sample rate
@@ -28,7 +28,7 @@ SimParams.PayloadLength   = SimParams.NumberOfMessage * SimParams.MessageLength 
 SimParams.FrameSize       = (SimParams.HeaderLength + SimParams.PayloadLength) ...
     / log2(SimParams.ModulationOrder);                                    % Frame size in symbols
 SimParams.FrameTime       = SimParams.Tsym*SimParams.FrameSize;
-
+SimParams.TotalFrame      = 10;
 %% Rx parameters
 SimParams.RolloffFactor     = 0.5;                      % Rolloff Factor of Raised Cosine Filter
 SimParams.ScramblerBase     = 2;
