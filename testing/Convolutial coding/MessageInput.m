@@ -50,6 +50,11 @@ output
 
 test2=out.simout3(6,1:275);
 
-isequal(test1,test2)
+simin=reshape(transpose(decimalToBinaryVector([69 69 69 69 69],8)),1,[])
 
-
+P = hex2poly('0xC75');
+[H,G] = cyclgen(23, P);
+G_P = G(1:12, 1:11);
+I_K = eye(12);
+G = [I_K G_P P.'];
+H = [transpose([G_P P.']) I_K];
