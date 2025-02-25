@@ -14,9 +14,9 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
 
     % Public, non-tunable properties
     properties (Nontunable)
-        LSFPreamble
-        BERTPreamble
-        ENDPreamble
+        LSFPreamble = [3 -3]'
+        BERTPreamble = [-3 3]'
+        ENDPreamble = [3 -3]'
         WaitGuard = 0
         ThresholdMetric = 20
     end
@@ -28,6 +28,7 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
 
     % Pre-computed constants or internal states
     properties (Access = private, Nontunable)
+        PreambleLength
         detectLSF
         detectBERT
         detectEND
@@ -61,12 +62,31 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
 
     methods (Access = protected)
         %% Common functions
-        function setupImpl(obj)
+        function validateInputsImpl(obj, varargin)
+            % Only floating-point supported for now.
+            validateattributes(varargin{1}, {'double','single'}, ...
+                {'finite', 'column'}, [class(obj) '.' 'Input'], 'Input');
+            
+            coder.internal.errorIf(~obj.pFirstCall && ...
+                length(varargin{1}) > ...
+                (length(obj.ENDPreamble)), ...
+                'comm:FrameSynchronizer:InvalidInputLength');
+
+        end
+
+        function flag = isInputSizeMutableImpl(obj,index)
+            % Return false if input size cannot change
+            % between calls to the System object
+            flag = false;
+        end
+
+
+        function setupImpl(obj, x)
             % Perform one-time calculations, such as computing constants
             obj.PreambleLength = length(obj.ENDPreamble);
-            obj.detectLSF = comm.PreableDetector(LSFPreable, Threshold= obj.ThresholdMetric, Detections = 'first');
-            obj.detectBERT = comm.PreableDetector(BERTPreable, Threshold= obj.ThresholdMetric, Detections = 'first');
-            obj.detectEND = comm.PreableDetector(ENDPreable, Threshold= obj.ThresholdMetric, Detections = 'first');
+            obj.detectLSF = comm.PreambleDetector(obj.LSFPreamble, Threshold= obj.ThresholdMetric, Detections = 'first');
+            obj.detectBERT = comm.PreambleDetector(obj.BERTPreamble, Threshold= obj.ThresholdMetric, Detections = 'first');
+            obj.detectEND = comm.PreambleDetector(obj.ENDPreamble, Threshold= obj.ThresholdMetric, Detections = 'first');
             
             obj.pDataBufferLength  = 2*obj.PreambleLength;
             obj.pDataBuffer        = dsp.AsyncBuffer(obj.pDataBufferLength);
@@ -77,15 +97,12 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
 
             obj.pFirstCall         = false;
             setup(obj.pDataBuffer, cast(1,'like',x));
-            setup(obj.pPrbStartIdxBuffer, 1);
-            obj.pLastDtMt = 0;
+            obj.StartedComm = false;
         end
 
         function resetImpl(obj)
             % Initialize internal buffer and related properties
             obj.pDataBuffer.reset();
-            obj.pPrbStartIdxBuffer.reset();
-            obj.pLastDtMt = 0;
             obj.StartedComm = false;
         end
 
@@ -93,34 +110,59 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
             % Implement algorithm. Calculate y as a function of input u and
             % internal or discrete states.
             obj.pDataBuffer.write(x(:));
-
+            buffer = obj.pDataBuffer.peek(obj.pDataBufferLength);
+            type = 0;
             if obj.StartedComm
-                [c, ~] = obj.detectEND(obj.pDataBuffer);
+                [c, cmet] = obj.detectEND(buffer);
+                if(~isempty(c))
+                    [~, cMaxIdx] = max(cmet(c));
+                    c = c(cMaxIdx);
+                else                 
+                    c = 0;
+                end 
                 if c > 0
                     obj.StartedComm = false;
+                    type = 3;
                 end
             else
 
-                [a, amet] = obj.detectLSF(obj.pDataBuffer);
-                [b, bmet] = obj.detectBERT(obj.pDataBuffer);
-                if (a~= 0 && amet > bmet)
+                [a, amet] = obj.detectLSF(buffer);
+                [b, bmet] = obj.detectBERT(buffer);
+                if(~isempty(a))
+                    [~, aMaxIdx] = max(amet(a));
+                    a = a(aMaxIdx);
+                    amet = aMaxIdx;
+                else 
+                    a = 0;
+                    amet = 0;
+                end
+                if(~isempty(b))
+                    [~, bMaxIdx] = max(bmet(b));
+                    b = b(bMaxIdx);
+                    bmet = bMaxIdx;
+                else 
+                    b = 0;
+                    bmet = 0;
+                end
+                if (a > 0  && amet(a) > bmet(b))
                     type=1;
                     obj.StartedComm = true;
-                    obj.pDataBuffer.read(obj.PreambleLength + a-1);
+                    obj.pDataBuffer.read(a-1);
 
-                elseif (b~= 0 && bmet>amet)
+                elseif (b > 0 && bmet(b)>amet(a))
                     type=2;
                     obj.StartedComm = true;
-                    obj.pDataBuffer.read(obj.PreambleLength + a-1);
-                else
-                    type=0;
+                    obj.pDataBuffer.read(a-1);
                 end
             end
             commstarted = obj.StartedComm;
-            y = 
+            y = obj.pDataBuffer.peek(obj.PreambleLength); 
            
         end
 
+        function releaseImpl(obj)
+            obj.pFirstCall = true;
+        end
   
         %% Backup/restore functions
         function s = saveObjectImpl(obj)
@@ -146,15 +188,56 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
         %% Simulink functions
         function ds = getDiscreteStateImpl(obj)
             % Return structure of properties with DiscreteState attribute
-            ds = struct([]);
+            ds = struct([obj.StartedComm]);
         end
 
-        function out = getOutputSizeImpl(obj)
+        function varargout = getOutputSizeImpl(obj)
             % Return size for each output port
-            out = [1 1];
+            %xout = propagatedInputSize(obj,1);
 
             % Example: inherit size from first input port
             % out = propagatedInputSize(obj,1);
+            varargout = {size(obj.ENDPreamble), [1 1], [1 1]};
+        end
+
+        function [out,out2,out3] = getOutputDataTypeImpl(obj)
+            % Return data type for each output port
+            out = "double";
+            out2 = "double";
+            out3 = "boolean";
+
+            % Example: inherit data type from first input port
+            % out = propagatedInputDataType(obj,1);
+        end
+
+        
+
+        function [out,out2,out3] = isOutputComplexImpl(obj)
+            % Return true for each output port with complex data
+            out = true;
+            out2 = false;
+            out3 = false;
+
+            % Example: inherit complexity from first input port
+            % out = propagatedInputComplexity(obj,1);
+        end
+
+        function [out,out2,out3] = isOutputFixedSizeImpl(obj)
+            % Return true for each output port with fixed size
+            out = true;
+            out2 = true;
+            out3 = true;
+
+            % Example: inherit fixed-size status from first input port
+            % out = propagatedInputFixedSize(obj,1);
+        end
+
+        function [sz,dt,cp] = getDiscreteStateSpecificationImpl(obj,name)
+            % Return size, data type, and complexity of discrete-state
+            % specified in name
+            sz = [1 1];
+            dt = "double";
+            cp = false;
         end
 
         function icon = getIconImpl(obj)
