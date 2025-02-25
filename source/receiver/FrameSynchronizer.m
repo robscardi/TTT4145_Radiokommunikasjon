@@ -64,7 +64,7 @@ classdef (StrictDefaults)FrameSynchronizer < comm.internal.Helper
     %   See also comm.PreambleDetector, comm.CarrierSynchronizer,
     %   comm.SymbolSynchronizer.
 
-    % Copyright 2016-2022 The MathWorks, Inc.
+    % Copyright 2016-2023 The MathWorks, Inc.
     
     %#codegen
     
@@ -132,12 +132,12 @@ classdef (StrictDefaults)FrameSynchronizer < comm.internal.Helper
             % Only floating-point supported for now.
             validateattributes(varargin{1}, {'double','single'}, ...
                 {'finite', 'column'}, [class(obj) '.' 'Input'], 'Input');
+            
+            coder.internal.errorIf(~obj.pFirstCall && ...
+                length(varargin{1}) > ...
+                (obj.OutputLength + length(obj.Preamble)), ...
+                'comm:FrameSynchronizer:InvalidInputLength');
 
-            if ~obj.pFirstCall
-                coder.internal.errorIf(length(varargin{1}) > ...
-                    (obj.OutputLength + length(obj.Preamble)), ...
-                    'comm:FrameSynchronizer:InvalidInputLength');
-            end
         end
         
         function setupImpl(obj, x)
