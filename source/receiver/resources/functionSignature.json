@@ -1,0 +1,18 @@
+{
+  "FramePreableDetector.FramePreableDetector" : 
+    {
+        "inputs": 
+        [
+            {"name":"LSFPreamble", "kind":"namevalue"},
+            {"name":"BERTPreamble", "kind":"namevalue"},
+            {"name":"ENDPreamble", "kind":"namevalue"},
+            {"name":"LSFSyncBurst", "kind":"namevalue"},
+            {"name":"BERTSyncBurst", "kind":"namevalue"},
+            {"name":"StreamSyncBurst", "kind":"namevalue"},
+            {"name":"PacketSyncBurst", "kind":"namevalue"},
+            {"name":"FrameLength", "kind":"namevalue"},
+            {"name":"WaitGuard", "kind":"namevalue"},
+            {"name":"ThresholdMetric", "kind":"namevalue"}
+        ]
+    }
+}
