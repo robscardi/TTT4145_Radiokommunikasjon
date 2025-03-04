@@ -46,8 +46,6 @@ pb=1;
 
 %end
 
-output
-
 simin=reshape(transpose(decimalToBinaryVector([69 69 69 69 69],8)),1,[])
 
 P = hex2poly('0xC75');
