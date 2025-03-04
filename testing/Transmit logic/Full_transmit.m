@@ -174,10 +174,10 @@ Packets=FormatMessageForWorkspace(NOF,200,5,Packet);
 %x=input vector
 
 
-SendableData=zeros(NOF+3,384/2);
+SendableData=zeros(NOF+3,384);
 
 %Preamble
-SendableData(1,:)=binaryToSymbol(Preample);
+SendableData(1,:)=Preample;
 
 %LSF
 LSF_frame=[0,LSF];
@@ -187,15 +187,15 @@ else
     Stream_mode=0;%Packet Mode
 end
 LSF_chain=sim("transmit_LSF");
-SendableData(2,:)=binaryToSymbol(LSF_chain.LSF);
+SendableData(2,:)=LSF_chain.LSF;
 
 if Stream_mode==1
     for d=1:NOF
     DFM=Messages(d,:);
     tx=sim("transmit_test.slx");
-    SendableData(d+2,:)=binaryToSymbol(tx.stream);
+    SendableData(d+2,:)=tx.stream;
     if binaryVectorToDecimal(tx.FrameNumber)==32768
-        SendableData(d+3,:)=binaryToSymbol(EoT);
+        SendableData(d+3,:)=EoT;
         break
     end
     end
@@ -204,14 +204,37 @@ else
     for d=1:NOF
     DFP=Packets(d,:);
     tx=sim("transmit_packet.slx");
-    SendableData(d+2,:)=binaryToSymbol(tx.Packet);
+    SendableData(d+2,:)=tx.Packet;
     if tx.MetaData(1,1)==1
-        SendableData(d+3,:)=binaryToSymbol(EoT);
+        SendableData(d+3,:)=EoT;
         break
     end
 
     end
 end
+
+
+%%
+%Upsample Frame by Frame (192 symbols)
+%Upsampling Factor
+Ufactor=10;
+alpha = 0.5;
+SymbolSpan = 8;
+
+t=zeros(height(SendableData),1);
+
+SendableDataWithTime=[t,SendableData];
+
+DataToPluto = zeros(height(SendableDataWithTime),width(SendableData)*5);
+for d=1:height(SendableDataWithTime)
+    DTP=SendableDataWithTime(d,:);
+    output=sim("raised_cosine");
+    DataToPluto(d,:) = output.filtered;
+end
+
+
+
+
 
 
 
