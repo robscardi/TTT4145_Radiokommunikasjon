@@ -4,10 +4,10 @@ Param = init();
 function SimParams = init
 %
 %% General simulation parameters
-SimParams.Rsym = 0.2e6;             % Symbol rate in Hertz
+SimParams.Rsym = 9e3;             % Symbol rate in Hertz
 SimParams.ModulationOrder = 4;      % QPSK alphabet size
 SimParams.SymbolBitNumber = log2(SimParams.ModulationOrder);
-SimParams.Interpolation = 2;        % Interpolation factor
+SimParams.Interpolation = 10;        % Interpolation factor
 SimParams.Decimation = 1;           % Decimation factor
 SimParams.Tsym = 1/SimParams.Rsym;  % Symbol time in sec
 SimParams.Fs   = SimParams.Rsym * SimParams.Interpolation; % Sample rate
@@ -16,25 +16,14 @@ SimParams.Fs   = SimParams.Rsym * SimParams.Interpolation; % Sample rate
 % [BarkerCode*2 | 'Hello world 000\n' | 'Hello world 001\n' ... | 'Hello world 099\n'];
 barker = comm.BarkerCode(Length=13, SamplesPerFrame=13);
 SimParams.Barker            = barker();
-SimParams.Preamble          = (barker()+1)/2;                               % Unipolar Barker Code TO MODIFY
-SimParams.PreambleLength    = length(SimParams.Preamble);
-SimParams.Header          = [SimParams.Preamble; SimParams.Preamble];
-SimParams.HeaderLength    = length(SimParams.Header);                   % Duplicate 2 Barker codes to be as a header
-
-SimParams.Message         = 'Hello world';
-SimParams.MessageLength   = length(SimParams.Message) + 5;                % 'Hello world 000\n'...
-SimParams.NumberOfMessage = 100;                                          % Number of messages in a frame
-SimParams.PayloadLength   = SimParams.NumberOfMessage * SimParams.MessageLength * 7; % 7 bits per characters
-SimParams.FrameSize       = (SimParams.HeaderLength + SimParams.PayloadLength) ...
-    / log2(SimParams.ModulationOrder);                                    % Frame size in symbols
+SimParams.FrameSize       = 192; % symbols                                    % Frame size in symbols
 SimParams.FrameTime       = SimParams.Tsym*SimParams.FrameSize;
-SimParams.TotalFrame      = 10;
 %% Rx parameters
 SimParams.RolloffFactor     = 0.5;                      % Rolloff Factor of Raised Cosine Filter
 SimParams.ScramblerBase     = 2;
 SimParams.ScramblerPolynomial           = [1 1 1 0 1];
 SimParams.ScramblerInitialConditions    = [0 0 0 0];
-SimParams.RaisedCosineFilterSpan = 32;                  % Filter span of Raised Cosine Tx Rx filters (in symbols)
+SimParams.RaisedCosineFilterSpan = 8;                  % Filter span of Raised Cosine Tx Rx filters (in symbols)
 SimParams.DesiredPower                  = 2;            % AGC desired output power (in watts)
 SimParams.AveragingLength               = 50;           % AGC averaging length
 SimParams.MaxPowerGain                  = 60;           % AGC maximum output power gain
@@ -53,21 +42,7 @@ SimParams.TimingRecoveryDampingFactor   = 1;            % Damping Factor for tim
 SimParams.TimingErrorDetectorGain       = 2.7*2*K*A^2+2.7*2*K*A^2;
 SimParams.PreambleDetectionThreshold    = 0.8;
 
-%% Message generation and BER calculation parameters
-msgSet = zeros(100 * SimParams.MessageLength, 1);
-for msgCnt = 0 : 99
-    msgSet(msgCnt * SimParams.MessageLength + (1 : SimParams.MessageLength)) = ...
-        sprintf('%s %03d\n', SimParams.Message, msgCnt);
-end
-bits = de2bi(msgSet, 7, 'left-msb')';
-SimParams.MessageBits = bits(:);
 
-% For BER calculation masks
-SimParams.BerMask = zeros(SimParams.NumberOfMessage * length(SimParams.Message) * 7, 1);
-for i = 1 : SimParams.NumberOfMessage
-    SimParams.BerMask( (i-1) * length(SimParams.Message) * 7 + ( 1: length(SimParams.Message) * 7) ) = ...
-        (i-1) * SimParams.MessageLength * 7 + (1: length(SimParams.Message) * 7);
-end
 %% Pluto receiver parameters
 SimParams.PlutoCenterFrequency      = 928e6;
 SimParams.PlutoGain                 = 30;
@@ -86,11 +61,12 @@ SimParams.Channels = [Band900(1):SimParams.ChannelSpacing:Band900(2) ...
     + SimParams.ChannelSpacing/2;
 %% Protocol specifications
     %% Preables
-    SimParams.Preable.LSF = [+3 -3];
-    SimParams.Preable.BERT = [-3 +3];
+    SimParams.Preamble.LSF = repmat([+3 -3]', 96,1);
+    SimParams.Preamble.BERT = repmat([-3 +3]', 96,1);
+
     %% Sinc Burst 
-    SimParams.SincBurst.LSF = demod_wrap([+3, +3, +3, +3, -3, -3, +3, -3],"bit");
-    SimParams.SincBurst.BERT = demod_wrap([-3, +3, -3, -3, +3, +3, +3, +3],"bit");
-    SimParams.SincBurst.Stream = demod_wrap([-3, -3, -3, -3, +3, +3, -3, +3], "bit");
-    SimParams.SincBurst.Packet = demod_wrap([+3, -3, +3, +3, -3, -3, -3, -3], "bit");
+    SimParams.SyncBurst.LSF = [+3, +3, +3, +3, -3, -3, +3, -3]';
+    SimParams.SyncBurst.BERT = [-3, +3, -3, -3, +3, +3, +3, +3]';
+    SimParams.SyncBurst.Stream = [-3, -3, -3, -3, +3, +3, -3, +3]';
+    SimParams.SyncBurst.Packet = [+3, -3, +3, +3, -3, -3, -3, -3]';
 end 

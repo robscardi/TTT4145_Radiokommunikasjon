@@ -14,11 +14,24 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
 
     % Public, non-tunable properties
     properties (Nontunable)
-        LSFPreamble = [3 -3]'
-        BERTPreamble = [-3 3]'
-        ENDPreamble = [3 -3]'
-        WaitGuard = 0
-        ThresholdMetric = 20
+        LSFPreamble {mustBeFloat, mustBeFinite} = [3 -3]'
+        BERTPreamble {mustBeFloat, mustBeFinite} = [-3 3]'
+        ENDPreamble {mustBeFloat, mustBeFinite} = [3 -3]'
+
+        LSFSyncBurst {mustBeFloat, mustBeFinite} = [3 -3]'
+        BERTSyncBurst {mustBeFloat, mustBeFinite} = [3 -3]'
+        StreamSyncBurst {mustBeFloat, mustBeFinite} = [3 -3]'
+        PacketSyncBurst {mustBeFloat, mustBeFinite} = [3 -3]'
+        FrameLength {mustBeInteger, mustBeFinite} = 192
+        WaitGuard {mustBeInteger, mustBeFinite} = 0
+
+    end
+    
+    properties 
+    
+
+        ThresholdMetric (1,1) {mustBeFloat, mustBeReal, mustBeFinite, mustBeNonnegative} = 20
+    
     end
 
     % Discrete state properties
@@ -29,17 +42,22 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
     % Pre-computed constants or internal states
     properties (Access = private, Nontunable)
         PreambleLength
+        SyncLength
+
         detectLSF
         detectBERT
         detectEND
 
-        pPrbLenOffset       % offset to get Preamble start index from end index
-        pDataBuffer         % Data buffer object
-        pDataBufferLength   % Data buffer length
+        detectSyncLSF
+        detectSyncBERT
+        detectSyncStream
+        detectSyncPacket
+
+        pDataBufferLength 
+        pDataBuffer 
+        pSyncIndexBuffer
         
-        pPrbENDIdxBuffer
-        pPrbBERTIdxBuffer
-        pPrbLSFIdxBuffer
+
     end
     
     properties (Access = private)
@@ -49,7 +67,7 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
     
     properties (Constant, Access = private)
         % 2 because, at most 1 in buffer, & at most 1 in input
-        pPrbIdxBufferLength = 2; % Preamble start index buffer length
+        pSyncIdxBufferLength = 2; % Preamble start index buffer length
     end
 
     methods
@@ -59,6 +77,30 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
             setProperties(obj,nargin,varargin{:})
         end
     end
+    methods (Access = private)
+        function [index, metric] = analyzeDetectReturn (obj, idx, metric)
+            if(~isempty(idx))
+                [~, MaxIdx] = max(metric(idx));
+                index = idx(MaxIdx);
+                metric = metric(MaxIdx);
+            else
+                index = 0;
+                metric = -1;
+            end
+        end
+
+        function z = readFromBuffer(obj, sf)
+            a = obj.pDataBuffer.read(sf(2));
+            z = a(sf(1):end);
+        end
+
+        function discardFromBuffer(obj, idx)
+            obj.pDataBuffer.read(idx);
+        end
+    
+    end
+
+
 
     methods (Access = protected)
         %% Common functions
@@ -84,16 +126,23 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
         function setupImpl(obj, x)
             % Perform one-time calculations, such as computing constants
             obj.PreambleLength = length(obj.ENDPreamble);
-            obj.detectLSF = comm.PreambleDetector(obj.LSFPreamble, Threshold= obj.ThresholdMetric, Detections = 'first');
-            obj.detectBERT = comm.PreambleDetector(obj.BERTPreamble, Threshold= obj.ThresholdMetric, Detections = 'first');
-            obj.detectEND = comm.PreambleDetector(obj.ENDPreamble, Threshold= obj.ThresholdMetric, Detections = 'first');
+            obj.SyncLength = length(obj.BERTSyncBurst);
             
-            obj.pDataBufferLength  = 2*obj.PreambleLength;
+            %% Frame Preable Detectors
+            obj.detectLSF = comm.PreambleDetector(obj.LSFPreamble, Threshold= obj.ThresholdMetric, Detections = "First");
+            obj.detectBERT = comm.PreambleDetector(obj.BERTPreamble, Threshold= obj.ThresholdMetric, Detections = "First");
+            obj.detectEND = comm.PreambleDetector(obj.ENDPreamble, Threshold= obj.ThresholdMetric, Detections = "First");
+            
+            %% Sync Burst detectors 
+            obj.detectSyncBERT = comm.PreambleDetector(obj.BERTSyncBurst,Threshold=obj.ThresholdMetric , Detections="First");
+            obj.detectSyncLSF = comm.PreambleDetector(obj.LSFSyncBurst,Threshold=obj.ThresholdMetric , Detections="First");
+            obj.detectSyncPacket = comm.PreambleDetector(obj.PacketSyncBurst,Threshold=obj.ThresholdMetric , Detections="First");
+            obj.detectSyncStream = comm.PreambleDetector(obj.StreamSyncBurst,Threshold=obj.ThresholdMetric , Detections="First");
+            
+            %%
+            obj.pDataBufferLength  = 3*(obj.FrameLength + obj.WaitGuard);
             obj.pDataBuffer        = dsp.AsyncBuffer(obj.pDataBufferLength);
             
-            obj.pPrbENDIdxBuffer = dsp.AsyncBuffer(obj.pPrbIdxBufferLength);
-            obj.pPrbBERTIdxBuffer = dsp.AsyncBuffer(obj.pPrbIdxBufferLength);
-            obj.pPrbLSFIdxBuffer = dsp.AsyncBuffer(obj.pPrbIdxBufferLength);
 
             obj.pFirstCall         = false;
             setup(obj.pDataBuffer, cast(1,'like',x));
@@ -105,63 +154,95 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
             obj.pDataBuffer.reset();
             obj.StartedComm = false;
         end
-
+        
         function [y,type,commstarted] = stepImpl(obj,x)
             % Implement algorithm. Calculate y as a function of input u and
             % internal or discrete states.
             obj.pDataBuffer.write(x(:));
             buffer = obj.pDataBuffer.peek(obj.pDataBufferLength);
-            type = 0;
             if obj.StartedComm
-                [c, cmet] = obj.detectEND(buffer);
-                if(~isempty(c))
-                    [~, cMaxIdx] = max(cmet(c));
-                    c = c(cMaxIdx);
-                else                 
-                    c = 0;
-                end 
-                if c > 0
+                
+                [c_, cmet_] =   obj.detectEND(buffer);
+                [BE_, BEmet_] = obj.detectSyncBERT(buffer);
+                [LS_, LSmet_] = obj.detectSyncLSF(buffer);
+                [PA_, PAmet_] = obj.detectSyncPacket(buffer);
+                [ST_, STmet_] = obj.detectSyncStream(buffer);
+
+                [c, cmet] =   obj.analyzeDetectReturn(c_, cmet_);
+                [BE, BEmet] = obj.analyzeDetectReturn(BE_, BEmet_);
+                [LS, LSmet] = obj.analyzeDetectReturn(LS_, LSmet_);
+                [PA, PAmet] = obj.analyzeDetectReturn(PA_, PAmet_);
+                [ST, STmet] = obj.analyzeDetectReturn(ST_, STmet_);
+                
+                totalMetric = [cmet, BEmet, LSmet, PAmet, STmet];
+                totalIndex = [c,BE,LS,PA,ST];
+                [maxMetric, maxIdx] = max(totalMetric);
+                idx = totalIndex(maxIdx);
+
+                if maxMetric == -1
+                    ytemp = obj.readFromBuffer([1, obj.FrameLength]);
+                    type = frameType.INVALID;
+                elseif maxIdx == 1
+                    type = frameType.END;
+                    ytemp = obj.readFromBuffer([idx-obj.FrameLength idx]);
                     obj.StartedComm = false;
-                    type = 3;
+                else 
+                    obj.discardFromBuffer(idx-obj.SyncLength);
+                    if obj.pDataBuffer.NumUnreadSamples < obj.FrameLength
+                        ytemp = zeros(1, obj.FrameLength, "like", x);
+                        type = frameType.INVALID;
+                    else
+                        type = frameType(bitshift(1, 2+maxIdx));
+                        finalIdx = (obj.FrameLength-obj.SyncLength)+idx;
+                        beginIdx = idx-obj.SyncLength;
+                        ytemp = readFromBuffer(obj, [beginIdx, finalIdx]);
+                    end
                 end
             else
 
-                [a, amet] = obj.detectLSF(buffer);
-                [b, bmet] = obj.detectBERT(buffer);
-                if(~isempty(a))
-                    [~, aMaxIdx] = max(amet(a));
-                    a = a(aMaxIdx);
-                    amet = aMaxIdx;
-                else 
-                    a = 0;
-                    amet = 0;
-                end
-                if(~isempty(b))
-                    [~, bMaxIdx] = max(bmet(b));
-                    b = b(bMaxIdx);
-                    bmet = bMaxIdx;
-                else 
-                    b = 0;
-                    bmet = 0;
-                end
-                if (a > 0  && amet(a) > bmet(b))
-                    type=1;
+                [a_, amet_] = obj.detectLSF(buffer);
+                [b_, bmet_] = obj.detectBERT(buffer);
+                [a, amet] = obj.analyzeDetectReturn(a_, amet_);
+                [b, bmet] = obj.analyzeDetectReturn(b_, bmet_);
+                
+                if amet > bmet
+                    type = frameType.STARTLSF;
                     obj.StartedComm = true;
-                    obj.pDataBuffer.read(a-1);
+                    ytemp = readFromBuffer(obj,[a-obj.FrameLength, a] );
+                    obj.discardFromBuffer(obj.WaitGuard);
 
-                elseif (b > 0 && bmet(b)>amet(a))
-                    type=2;
+                elseif bmet > amet
+                    type = frameType.STARTLSF;
                     obj.StartedComm = true;
-                    obj.pDataBuffer.read(a-1);
+                    ytemp = readFromBuffer(obj,[b-obj.FrameLength, b] );
+                    obj.discardFromBuffer(obj.WaitGuard);
+                else
+                    type = frameType.INVALID;
+                    ytemp = readFromBuffer(obj, [1 obj.FrameLength]);
                 end
             end
+
             commstarted = obj.StartedComm;
-            y = obj.pDataBuffer.peek(obj.PreambleLength); 
-           
+            if comm.internal.utilities.isSim()
+                y = ytemp;
+            else
+                y = coder.nullcopy(zeros(obj.FrameLength, 1, 'like', x));
+                y(:,1) = ytemp;
+            end
         end
 
         function releaseImpl(obj)
             obj.pFirstCall = true;
+        end
+
+        function validatePropertiesImpl(obj)
+            % Validate related or interdependent property values
+            assert(length(obj.BERTPreamble) == length(obj.LSFPreamble))
+            assert(length(obj.BERTPreamble) == length(obj.ENDPreamble))
+            
+            assert(length(obj.BERTSyncBurst) == length(obj.LSFSyncBurst))
+            assert(length(obj.BERTSyncBurst) == length(obj.PacketSyncBurst))
+            assert(length(obj.BERTSyncBurst) == length(obj.StreamSyncBurst))
         end
   
         %% Backup/restore functions
@@ -203,7 +284,7 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
         function [out,out2,out3] = getOutputDataTypeImpl(obj)
             % Return data type for each output port
             out = "double";
-            out2 = "double";
+            out2 = "frameType";
             out3 = "boolean";
 
             % Example: inherit data type from first input port
