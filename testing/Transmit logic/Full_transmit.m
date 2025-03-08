@@ -1,5 +1,4 @@
 
-
 %%Define hex
 function hex = hexToArray(x,y)
 hex=hexToBinaryVector(x,8);
@@ -86,9 +85,26 @@ function Messages = FormatMessageForWorkspace(NOF,ChunkLength,...
     end
 Messages=[t,Messages,Frame_number];
 end 
+
+
+function GDI = golayInput(d,ChunkArray,G,GolayParts,StartValues,Arrays...
+    ,LSF,OutputParts)
+    i=mod(d-1,6)+1;
+    start=StartValues(i);
+    Chunk=LSF(start:start+40-1);
+    ChunkArray(d,:) = [Chunk,decToArray(i,1,8)];
+    for j=1:4
+        section=GolayParts(j);
+        m=ChunkArray(d,section:section+12-1);
+        v=mod(m*G,2);
+        section=OutputParts(j);
+        Arrays(section:section+24-1) = v;
+    end
+    GDI=[0,Arrays];
+end
 %%
 %%Constants
-
+NOF=16;
 
 Message=["48" "45" "4C" "4C" "4F" "57" "4F" "52" "4C" "44" "23" "23" "23" ...
     "23" "23" "23"];
@@ -152,7 +168,7 @@ P3 = [1; 1; 1; 1; 1; 1; 1; 0;];
 %LSF Data
 DST = ["75","72","20","6D","6F","6D"];
 SRC = ["6D","79","44","49","43","4B"];
-TYPE = ["00","04"];
+TYPE = ["00","05"];
 META = ["52","61","64","69","6F","6B","6F","6D","6D","75","6E","69","6B", ...
         "61"];
 CRC = ["73","6A"];
@@ -160,12 +176,27 @@ CRC = ["73","6A"];
 LSF = [DST,SRC,TYPE,META,CRC];
 LSF = hexToArray(LSF,1);
 
+%Golay Generating and Parity Check Matrix
+P = hex2poly('0xC75');
+[H,G] = cyclgen(23, P);
+ 
+G_P = G(1:12, 1:11);
+I_K = eye(12);
+G = [I_K G_P P.'];
+H = [transpose([G_P P.']) I_K];
+
+StartValues=[1,41,81,121,161,201];
+GolayParts=[1,13,25,37];
+OutputParts=[1,25,49,73];
+ChunkArray=zeros(NOF,48);
+EncodedOutput=zeros(1,96);
+
 
 
 %%
 %Implement Message and Data Length
 
-NOF=16;
+
 Messages=FormatMessageForWorkspace(NOF,128,15,Message);
 Packets=FormatMessageForWorkspace(NOF,200,5,Packet);
 
@@ -192,6 +223,8 @@ SendableData(2,:)=LSF_chain.LSF;
 if Stream_mode==1
     for d=1:NOF
     DFM=Messages(d,:);
+    LSFC = golayInput(d,ChunkArray,G,GolayParts,StartValues, ... 
+        EncodedOutput,LSF,OutputParts);
     tx=sim("transmit_test.slx");
     SendableData(d+2,:)=tx.stream;
     if binaryVectorToDecimal(tx.FrameNumber)==32768
