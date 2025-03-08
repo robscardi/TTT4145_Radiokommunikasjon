@@ -61,12 +61,12 @@ SimParams.Channels = [Band900(1):SimParams.ChannelSpacing:Band900(2) ...
     + SimParams.ChannelSpacing/2;
 %% Protocol specifications
     %% Preables
-    SimParams.Preamble.LSF = repmat([+3 -3]', 96,1);
-    SimParams.Preamble.BERT = repmat([-3 +3]', 96,1);
+    SimParams.Preamble = FSKtoQPSK([+3 -3]');
+    SimParams.EOTPattern = FSKtoQPSK([+3, +3, +3, +3, +3, +3, -3, +3]);
 
     %% Sinc Burst 
-    SimParams.SyncBurst.LSF = [+3, +3, +3, +3, -3, -3, +3, -3]';
-    SimParams.SyncBurst.BERT = [-3, +3, -3, -3, +3, +3, +3, +3]';
-    SimParams.SyncBurst.Stream = [-3, -3, -3, -3, +3, +3, -3, +3]';
-    SimParams.SyncBurst.Packet = [+3, -3, +3, +3, -3, -3, -3, -3]';
+    SimParams.SyncBurst.LSF = FSKtoQPSK([+3, +3, +3, +3, -3, -3, +3, -3]');
+    SimParams.SyncBurst.BERT = FSKtoQPSK([-3, +3, -3, -3, +3, +3, +3, +3]');
+    SimParams.SyncBurst.Stream = FSKtoQPSK([-3, -3, -3, -3, +3, +3, -3, +3]');
+    SimParams.SyncBurst.Packet = FSKtoQPSK([+3, -3, +3, +3, -3, -3, -3, -3]');
 end 
