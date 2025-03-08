@@ -10,7 +10,7 @@ frameSynchronizer = FramePreambleDetector( ...
     ThresholdMetric = 15);
 
 message = [Param.SyncBurst.Stream; mod_wrap(randi([0 1],184*2,1), "bit")];
-noise = mod_wrap(randi([0 1],192*2,1), "bit");
+noise = mod_wrap(randi([0 1],400*2,1), "bit");
 header = repmat(Param.Preamble, 192/2,1);
 LSF_mess = [Param.SyncBurst.LSF; mod_wrap(randi([0 1],184*2,1), "bit")];
 whole_message = [noise; header; noise; LSF_mess; noise; message; noise; message; noise; noise ];

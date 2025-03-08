@@ -90,11 +90,6 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
             end
         end
 
-        function z = readFromBuffer(obj, sf)
-            a = obj.pDataBuffer.read(sf(2));
-            z = a(sf(1):end);
-        end
-
         function z = peekFromBuffer(obj, nSample)
             z = obj.pDataBuffer.peek(nSample);
         end
@@ -102,16 +97,7 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
         function discardFromBuffer(obj, idx)
             obj.pDataBuffer.read(idx);
         end
-        function y = findEndFrame(obj, idx)
-            y = obj.FrameLength + (obj.SyncLength - idx);
-        end
-        function y = readFrameFromBuffer(obj, idx)
-            if(idx >= obj.FrameLength)
-                y = obj.pDataBuffer.read(obj.FrameLength);
-            else 
-                assert(false);
-            end
-        end
+       
         function y = detectSync(obj, detector, buffer)
             [a_, b_] = detector(buffer);
             [idx, met] = obj.analyzeDetectReturn(a_, b_);
@@ -253,7 +239,7 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
                 end
             elseif ~obj.commStarted
                 metric = xcorr(buffer, obj.Preamble);
-                [value, idx] = max(abs(metric));
+                [value, idx] = max(abs(metric(1:obj.pDataBufferLength)));
                 %idx = idx - obj.FrameLength;
                 if value > 200 && idx > obj.FrameLength-1
                     obj.discardFromBuffer(idx);
