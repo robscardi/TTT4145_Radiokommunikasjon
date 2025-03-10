@@ -62,30 +62,30 @@ SimParams.Channels = [Band900(1):SimParams.ChannelSpacing:Band900(2) ...
 %% Protocol specifications
 
     %% Preambles
-    SimParams.Preamble.LSF = repmat([+3 -3]', 96,1);
-    SimParams.Preamble.LSFHex = [
+    SimParams.Preambles.LSF = repmat([+3 -3]', 96,1);
+    SimParams.Preambles.LSFBinary = hexToArray([
     "77", "77", "77", "77", "77", "77", "77", "77", "77", "77", ...
     "77", "77", "77", "77", "77", "77", "77", "77", "77", "77", ...
     "77", "77", "77", "77", "77", "77", "77", "77", "77", "77", ...
     "77", "77", "77", "77", "77", "77", "77", "77", "77", "77", ...
-    "77", "77", "77", "77", "77", "77", "77", "77"];
-    SimParams.Preamble.BERT = repmat([-3 +3]', 96,1);
+    "77", "77", "77", "77", "77", "77", "77", "77"],1);
+    SimParams.Preambles.BERT = repmat([-3 +3]', 96,1);
 
     %% Sync Burst 
     SimParams.SyncBurst.LSF = [+3, +3, +3, +3, -3, -3, +3, -3]';
-    SimParams.SyncBurst.LSFHex = ["55", "F7"];
+    SimParams.SyncBurst.LSFBinary = hexToArray(["55", "F7"],1);
     SimParams.SyncBurst.BERT = [-3, +3, -3, -3, +3, +3, +3, +3]';
     SimParams.SyncBurst.Stream = [-3, -3, -3, -3, +3, +3, -3, +3]';
-    SimParams.SyncBurst.StreamHex = ["FF", "5D"];
+    SimParams.SyncBurst.StreamBinary = hexToArray(["FF", "5D"],1);
     SimParams.SyncBurst.Packet = [+3, -3, +3, +3, -3, -3, -3, -3]';
-    SimParams.SyncBurst.StreamHex = ["75", "FF"];
+    SimParams.SyncBurst.PacketBinary = hexToArray(["75", "FF"],1);
     %% EOT
-    SimParams.EOT.EoTHex = [
+    SimParams.EOT.EoTBinary = hexToArray([
     "55", "5D", "55", "5D", "55", "5D", "55", "5D", "55", "5D", ...
     "55", "5D", "55", "5D", "55", "5D", "55", "5D", "55", "5D", ...
     "55", "5D", "55", "5D", "55", "5D", "55", "5D", "55", "5D", ...
     "55", "5D", "55", "5D", "55", "5D", "55", "5D", "55", "5D", ...
-    "55", "5D", "55", "5D", "55", "5D", "55", "5D"];
+    "55", "5D", "55", "5D", "55", "5D", "55", "5D"],1);
     %% Interleaving Table
     %Interleaving Table
     InterleavingVector=zeros(367,1);
@@ -101,12 +101,12 @@ SimParams.Channels = [Band900(1):SimParams.ChannelSpacing:Band900(2) ...
 
     SimParams.Puncturing.P3 = [1; 1; 1; 1; 1; 1; 1; 0;];
     %% PsedoRandom Vector
-    SimParams.RandomizeHex= [
+    SimParams.RandomizeHex= hexToArray([
     "D6", "B5", "E2", "30", "82", "FF", "84", "62", "BA", "4E", ...
     "96", "90", "D8", "98", "DD", "5D", "0C", "C8", "52", "43", ...
     "91", "1D", "F8", "6E", "68", "2F", "35", "DA", "14", "EA", ...
     "CD", "76", "19", "8D", "D5", "80", "D1", "33", "87", "13", ...
-    "57", "18", "2D", "29", "78", "C3"];
+    "57", "18", "2D", "29", "78", "C3"],1);
     %% Golay Generation
     
     SimParams.Golay.Matrix.P = hex2poly('0xC75');
@@ -131,5 +131,6 @@ SimParams.Channels = [Band900(1):SimParams.ChannelSpacing:Band900(2) ...
     SimParams.SyncBurst.BERT = FSKtoQPSK([-3, +3, -3, -3, +3, +3, +3, +3]');
     SimParams.SyncBurst.Stream = FSKtoQPSK([-3, -3, -3, -3, +3, +3, -3, +3]');
     SimParams.SyncBurst.Packet = FSKtoQPSK([+3, -3, +3, +3, -3, -3, -3, -3]');
+    
 
 end 

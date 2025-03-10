@@ -20,25 +20,6 @@ binary=reshape(binary,1,[]);
 end
 end
 
-function symbolvector=binaryToSymbol(x)
-symbolvector=zeros(1,(length(x)/2));
-j=1;
-for i=1:2:length(x)
-    sym=binaryVectorToDecimal([x(i),x(i+1)]);
-    switch sym
-        case 0
-            symbolvector(j)=1;
-        case 1
-            symbolvector(j)=3;
-        case 2
-            symbolvector(j)=-1;
-        case 3
-            symbolvector(j)=-3;
-    end
-    j=j+1;
-end
-end
-
 function Messages = FormatMessageForWorkspace(NOF,ChunkLength,...
     FrameNumberSize, InputData)
     t=zeros(NOF,1);
@@ -263,8 +244,6 @@ for d=1:height(SendableDataWithTime)
     DataToPluto(d,:) = output.filtered;
 end
 
-%%
-%Send the stuff
 
 
 
