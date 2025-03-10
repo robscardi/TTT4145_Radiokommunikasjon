@@ -4,8 +4,8 @@ classdef frameType < uint8
     enumeration
     INVALID(0)
     END(1)
-    STARTLSF(2)
-    STARTBERT(4)
+    START(2)
+    BERT(4)
     LSF(8)
     PACKET(16)
     STREAM(32)

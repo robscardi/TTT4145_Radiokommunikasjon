@@ -1,0 +1,9 @@
+{
+  "FramePreableDetector.FramePreableDetector" : 
+    {
+        "inputs": 
+        [
+            {"kind":"properties", "type":["FramePreambleDetector"]}
+        ]
+    }
+}

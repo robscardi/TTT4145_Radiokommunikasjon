@@ -1,4 +1,4 @@
-classdef (StrictDefaults) FramePreambleDetector < matlab.System
+classdef (StrictDefaults) Channel_Encoder < matlab.System
     % untitled2 Add summary here
     %
     % NOTE: When renaming the class name untitled2, the file name
@@ -79,38 +79,7 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
         end
     end
     methods (Access = private)
-        function [index, metric] = analyzeDetectReturn (~, idx, metric)
-            if(~isempty(idx))
-                [~, MaxIdx] = max(metric(idx));
-                index = idx(MaxIdx);
-                metric = metric(index);
-            else
-                index = 0;
-                metric = -1;
-            end
-        end
-
-        function z = peekFromBuffer(obj, nSample)
-            z = obj.pDataBuffer.peek(nSample);
-        end
-        
-        function discardFromBuffer(obj, idx)
-            obj.pDataBuffer.read(idx);
-        end
        
-        function y = detectSync(obj, detector, buffer)
-            [a_, b_] = detector(buffer);
-            [idx, met] = obj.analyzeDetectReturn(a_, b_);
-            if met > obj.ThresholdMetric
-                obj.pSyncIndexBuffer = idx;
-                y = true;
-            else
-                y = false;
-            end
-        end
-        function allignSync(obj, idx)
-            obj.discardFromBuffer(idx-obj.SyncLength);
-        end
     end
 
 
@@ -118,14 +87,7 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
     methods (Access = protected)
         %% Common functions
         function validateInputsImpl(obj, varargin)
-            % Only floating-point supported for now.
-            validateattributes(varargin{1}, {'double','single'}, ...
-                {'finite', 'column'}, [class(obj) '.' 'Input'], 'Input');
-            
-            coder.internal.errorIf(~obj.pFirstCall && ...
-                length(varargin{1}) > ...
-                (length(obj.ENDPreamble)), ...
-                'comm:FrameSynchronizer:InvalidInputLength');
+
 
         end
 
