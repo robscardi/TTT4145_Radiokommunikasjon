@@ -232,7 +232,7 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
                             t = obj.detectSync(obj.detectSyncLSF, buffer);
                             if t
                                 obj.pBufferedFrameType = frameType.LSF;
-                                obj.currentState = frameSyncState.STREAM;
+                                obj.currentState = frameSyncState.PACKET;
                                 obj.allignSync(obj.pSyncIndexBuffer)
                             end
                     end
