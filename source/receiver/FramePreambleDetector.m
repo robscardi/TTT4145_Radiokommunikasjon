@@ -129,7 +129,7 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
 
         end
 
-        function flag = isInputSizeMutableImpl(obj,index)
+        function flag = isInputSizeMutableImpl(~,~)
             % Return false if input size cannot change
             % between calls to the System object
             flag = false;
@@ -285,7 +285,7 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
         %% Simulink functions
         function ds = getDiscreteStateImpl(obj)
             % Return structure of properties with DiscreteState attribute
-            ds = struct([obj.StartedComm]);
+            ds = struct([obj.commStarted, obj.currentState]);
         end
 
         function varargout = getOutputSizeImpl(obj)
@@ -294,7 +294,7 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
 
             % Example: inherit size from first input port
             % out = propagatedInputSize(obj,1);
-            varargout = {size(obj.ENDPreamble), [1 1], [1 1]};
+            varargout = {[obj.FrameLength, 1], [1 1]};
         end
 
         function [out,out2] = getOutputDataTypeImpl(obj)
