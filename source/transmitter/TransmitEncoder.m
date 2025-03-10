@@ -17,21 +17,13 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
         
         Source
         Destination
-      
-        BitNumber (1,1) {mustBeInteger, mustBePositive} = 96
+        
         FrameLength = 240;
         LSFSyncBurst = FSKtoQPSK([-3 3]')
         PacketSyncBurst = FSKtoQPSK([3 3]');
 
     end
     
-    properties 
-    
-
-        ThresholdMetric (1,1) {mustBeFloat, mustBeReal, mustBeFinite, mustBeNonnegative} = 20
-    
-    end
-   
 
     % Discrete state properties
     properties (DiscreteState)
@@ -41,7 +33,7 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
 
     % Pre-computed constants or internal states
     properties (Access = private, Nontunable)
-        
+        buffer
     end
     
     properties (Access = private)
@@ -58,7 +50,7 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
 
     methods
         % Constructor
-        function obj = FramePreambleDetector(varargin)
+        function obj = TransmitEncoder(varargin)
             % Support name-value pair arguments when constructing object
             setProperties(obj,nargin,varargin{:})
         end
@@ -95,6 +87,7 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
 
         function setupImpl(obj, x)
             % Perform one-time calculations, such as computing constants
+            obj.buffer = dsp.AsyncBuffer(10*obj.FrameLength);
         end
 
         function resetImpl(obj)
@@ -107,19 +100,20 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
             if begin 
                 obj.state = transmitEncoderStates.STARTPREAMBLE;
             end
-
+            obj.buffer.write(x(:));
+            ytemp = zeroes(obj.FrameLength, 1);
             
             switch obj.state
                 case transmitEncoderStates.STARTPREAMBLE
-                    y = repmat(192/4, Param.Preamble); % to change into binary
+                    obj.state = transmitEncoderStates.LSF;
 
                 case transmitEncoderStates.LSF
-                    ytemp = zeroes(obj.FrameLength, 1);
+                    
                     ytemp(1:length(obj.LSFSyncBurst)) = obj.LSFSyncBurst(:);
                     % Golay encoding
                     obj.state = transmitEncoderStates.PACKET;
                 case Packet
-                    ytemp = x;
+                    ytemp = obj.buffer.read(obj.FrameLength);
                     if ~begin
                         obj.state = transmitEncoderStates.EOT;
                     end
@@ -180,7 +174,7 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
         function [out, out2] = getOutputDataTypeImpl(obj)
             % Return data type for each output port
             out = propagatedInputDataType(obj,1);
-            out2 = "boolean";
+            out2 = "transmitEncoderStates";
         end
 
         
