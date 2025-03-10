@@ -15,10 +15,13 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
     % Public, non-tunable properties
     properties (Nontunable)
         
-        Destination 
-        Source 
-        
+        Source
+        Destination
+      
         BitNumber (1,1) {mustBeInteger, mustBePositive} = 96
+        FrameLength = 240;
+        LSFSyncBurst = FSKtoQPSK([-3 3]')
+        PacketSyncBurst = FSKtoQPSK([3 3]');
 
     end
     
@@ -32,8 +35,7 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
 
     % Discrete state properties
     properties (DiscreteState)
-        commStarted
-        currentState
+        state
     end
 
 
@@ -43,14 +45,12 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
     end
     
     properties (Access = private)
-        METADATA
-        CRC
     end
     
     properties (Constant, Access = private)
         StartValues=[1,41,81,121,161,201];
         GolayParts=[1,13,25,37];
-        InputParts=[1,25,49,73];
+        OutputParts=[1,25,49,73];
         additionalBits = 12;
         P = hex2poly('0xC75');
         
@@ -64,20 +64,19 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
         end
     end
     methods (Access = private)
-        function GDI = golayInput(d,ChunkArray,G,GolayParts,StartValues,Arrays...
-                ,LSF,OutputParts)
+        function GDI = golayInput(obj, d,LSF)
             i=mod(d-1,6)+1;
-            start=StartValues(i);
+            start=obj.StartValues(i);
             Chunk=LSF(start:start+40-1);
-            ChunkArray(d,:) = [Chunk,decToArray(i,1,8)];
+            obj.ChunkArray(d,:) = [Chunk,decToArray(i,1,8)];
             for j=1:4
-                section=GolayParts(j);
-                m=ChunkArray(d,section:section+12-1);
-                v=mod(m*G,2);
-                section=OutputParts(j);
-                Arrays(section:section+24-1) = v;
+                section=obj.GolayParts(j);
+                m=obj.ChunkArray(d,section:section+12-1);
+                v=mod(m*obj.G,2);
+                section=obj.OutputParts(j);
+                obj.Arrays(section:section+24-1) = v;
             end
-            GDI=[0,Arrays];
+            GDI=[0,obj.Arrays];
         end
 
     end
@@ -96,58 +95,50 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
 
         function setupImpl(obj, x)
             % Perform one-time calculations, such as computing constants
-            obj.LUT = containers.Map();
-            obj.NOF = obj.BitNumber/obj.additionalBits;
-            
-            
-            [~,G_] = cyclgen(23, obj.P);
- 
-            G_P = G_(1:12, 1:11);
-            I_K = eye(12);
-            obj.G = [I_K G_P obj.P.'];
-            obj.H = [transpose([G_P obj.P.']) I_K];
-            
         end
 
         function resetImpl(obj)
             % Initialize internal buffer and related properties
         end
         
-        function [y, correct] = stepImpl(obj,x)
+        function [y, s] = stepImpl(obj,x, begin)
             % Implement algorithm. Calculate y as a function of input u and
             % internal or discrete states.
-            ytemp = zeros(length(x)/2, 1);
-            for j=1:4
-                section=obj.InputParts(j);
-                InputVectorSection = x(n,section:section+24-1);
-                s=mod(obj.H*InputVectorSection',2);
-                if s(1:12)==0
-                    correct = true;
-                    %disp("No errors")
-                else
-                    if isKey(obj.LUT,num2str(s'))
-                        error_pattern = obj.LUT(num2str(s'));
-                        c_corrected = xor(InputVectorSection,error_pattern);
-                        correct = true;
-                        %disp("Error Corrected")
-                    else
-                        c_corrected = InputVectorSection;
-                        correct = false;
-                        %disp("Error Detected")
-                    end
-                    ytemp(n,section:section+24-1)=c_corrected;
-                end
+            if begin 
+                obj.state = transmitEncoderStates.STARTPREAMBLE;
             end
+
+            
+            switch obj.state
+                case transmitEncoderStates.STARTPREAMBLE
+                    y = repmat(192/4, Param.Preamble); % to change into binary
+
+                case transmitEncoderStates.LSF
+                    ytemp = zeroes(obj.FrameLength, 1);
+                    ytemp(1:length(obj.LSFSyncBurst)) = obj.LSFSyncBurst(:);
+                    % Golay encoding
+                    obj.state = transmitEncoderStates.PACKET;
+                case Packet
+                    ytemp = x;
+                    if ~begin
+                        obj.state = transmitEncoderStates.EOT;
+                    end
+                case transmitEncoderStates.EOT
+                    ytemp = Param.EOT.EoTBinary;
+                    obj.state = transmitEncoderStates.WAIT;
+            end
+
             if comm.internal.utilities.isSim()
                 y = ytemp;
             else
                 y = coder.nullcopy(zeros(obj.FrameLength, 1, 'like', x));
                 y(:,1) = ytemp;
-            end            
+            end
+            s = obj.state;
         end
 
         function releaseImpl(obj)
-
+            obj.state = transmitEncoderStates.WAIT;
         end
 
         function validatePropertiesImpl(obj)
