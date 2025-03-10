@@ -50,7 +50,7 @@ classdef testFrameSynchronizer < matlab.unittest.TestCase
             j = 1; k = 192;
             for i=1:n_iter
                 [res, type] = testCase.DUT(whole_message(j:k));
-                if type == frameType.STREAM
+                if type == frameType.PACKET
                     a = xcorr(res, message);
                     max(abs(a))
                     n_message = n_message +1;
