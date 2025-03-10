@@ -60,13 +60,64 @@ SimParams.Channels = [Band900(1):SimParams.ChannelSpacing:Band900(2) ...
     Band24(1):SimParams.ChannelSpacing:Band24(2) ] ...
     + SimParams.ChannelSpacing/2;
 %% Protocol specifications
-    %% Preables
+    %% Preambles
     SimParams.Preamble.LSF = repmat([+3 -3]', 96,1);
+    SimParams.Preamble.LSFHex = [
+    "77", "77", "77", "77", "77", "77", "77", "77", "77", "77", ...
+    "77", "77", "77", "77", "77", "77", "77", "77", "77", "77", ...
+    "77", "77", "77", "77", "77", "77", "77", "77", "77", "77", ...
+    "77", "77", "77", "77", "77", "77", "77", "77", "77", "77", ...
+    "77", "77", "77", "77", "77", "77", "77", "77"];
     SimParams.Preamble.BERT = repmat([-3 +3]', 96,1);
 
-    %% Sinc Burst 
+    %% Sync Burst 
     SimParams.SyncBurst.LSF = [+3, +3, +3, +3, -3, -3, +3, -3]';
+    SimParams.SyncBurst.LSFHex = ["55", "F7"];
     SimParams.SyncBurst.BERT = [-3, +3, -3, -3, +3, +3, +3, +3]';
     SimParams.SyncBurst.Stream = [-3, -3, -3, -3, +3, +3, -3, +3]';
+    SimParams.SyncBurst.StreamHex = ["FF", "5D"];
     SimParams.SyncBurst.Packet = [+3, -3, +3, +3, -3, -3, -3, -3]';
+    SimParams.SyncBurst.StreamHex = ["75", "FF"];
+    %% EOT
+    SimParams.EOT.EoTHex = [
+    "55", "5D", "55", "5D", "55", "5D", "55", "5D", "55", "5D", ...
+    "55", "5D", "55", "5D", "55", "5D", "55", "5D", "55", "5D", ...
+    "55", "5D", "55", "5D", "55", "5D", "55", "5D", "55", "5D", ...
+    "55", "5D", "55", "5D", "55", "5D", "55", "5D", "55", "5D", ...
+    "55", "5D", "55", "5D", "55", "5D", "55", "5D"];
+    %% Interleaving Table
+    %Interleaving Table
+    InterleavingVector=zeros(367,1);
+    for i=1:367
+    InterleavingVector(i)=mod((45*i+92*i^2),368);
+    end
+    SimParams.InterleavingTable=InterleavingVector;
+    %% Puncturing Vectors
+    SimParams.Puncturing.P1=[1;1;0;1;1;1;0;1;1;1;0;1;1;1;0;1;1;1;0;1;1;1;0;1;1;1;0;1;1;1;0;1;1; ...
+    1;0;1;1;1;0;1;1;1;0;1;1;1;0;1;1;1;0;1;1;1;0;1;1;1;0;1;1];
+
+    SimParams.Puncturing.P2 = [1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 0;];
+
+    SimParams.Puncturing.P3 = [1; 1; 1; 1; 1; 1; 1; 0;];
+    %% PsedoRandom Vector
+    SimParams.RandomizeHex= [
+    "D6", "B5", "E2", "30", "82", "FF", "84", "62", "BA", "4E", ...
+    "96", "90", "D8", "98", "DD", "5D", "0C", "C8", "52", "43", ...
+    "91", "1D", "F8", "6E", "68", "2F", "35", "DA", "14", "EA", ...
+    "CD", "76", "19", "8D", "D5", "80", "D1", "33", "87", "13", ...
+    "57", "18", "2D", "29", "78", "C3"];
+    %% Golay Generation
+    
+    SimParams.Golay.Matrix.P = hex2poly('0xC75');
+    [H,G] = cyclgen(23, SimParams.Golay.Matrix.P);
+     
+    G_P = G(1:12, 1:11);
+    I_K = eye(12);
+    SimParams.Golay.Matrix.G = [I_K G_P SimParams.Golay.Matrix.P.'];
+    SimParams.Golay.Matrix.H = [transpose([G_P SimParams.Golay.Matrix.P.']) I_K];
+    
+    SimParams.Golay.Matrix.StartValues=[1,41,81,121,161,201];
+    SimParams.Golay.Matrix.GolayParts=[1,13,25,37];
+    SimParams.Golay.Matrix.OutputParts=[1,25,49,73];
+    SimParams.Golay.Matrix.EncodedOutput=zeros(1,96);
 end 

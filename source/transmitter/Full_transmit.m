@@ -188,7 +188,7 @@ H = [transpose([G_P P.']) I_K];
 StartValues=[1,41,81,121,161,201];
 GolayParts=[1,13,25,37];
 OutputParts=[1,25,49,73];
-ChunkArray=zeros(NOF,48);
+ChunkArray=zeros(NOF,48); %Not in plutoradio_init
 EncodedOutput=zeros(1,96);
 
 
@@ -223,7 +223,7 @@ if Stream_mode==1
     DFM=Messages(d,:);
     LSFC = golayInput(d,ChunkArray,G,GolayParts,StartValues, ... 
         EncodedOutput,LSF,OutputParts);
-    tx=sim("transmit_test.slx");
+    tx=sim("transmit_stream.slx");
     SendableData(d+2,:)=tx.stream;
     if binaryVectorToDecimal(tx.FrameNumber)==32768
         SendableData(d+3,:)=EoT;
