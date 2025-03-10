@@ -79,6 +79,108 @@ classdef (StrictDefaults) Channel_Encoder < matlab.System
         end
     end
     methods (Access = private)
+        function hex = hexToArray(x,y)
+            hex=hexToBinaryVector(x,8);
+            hex=transpose(hex);
+            if y==1
+                hex=double(reshape(hex,1,[]));
+            else
+                hex=reshape(hex,1,[]);
+            end
+        end
+    
+        function binary=decToArray(x,y,z)
+            binary=decimalToBinaryVector(x,z);
+            binary=transpose(binary);
+            if y==1
+                binary=double(reshape(binary,1,[]));
+            else
+                binary=reshape(binary,1,[]);
+            end
+        end
+    
+        function symbolvector=binaryToSymbol(x)
+            symbolvector=zeros(1,(length(x)/2));
+            j=1;
+            for i=1:2:length(x)
+                sym=binaryVectorToDecimal([x(i),x(i+1)]);
+                switch sym
+                    case 0
+                        symbolvector(j)=1;
+                    case 1
+                        symbolvector(j)=3;
+                    case 2
+                        symbolvector(j)=-1;
+                    case 3
+                        symbolvector(j)=-3;
+                end
+            j=j+1;
+            end
+        end
+    
+        function Messages = FormatMessageForWorkspace(NOF,ChunkLength,...
+                FrameNumberSize, InputData)
+                t=zeros(NOF,1);
+            
+                Frame_number = zeros(NOF,FrameNumberSize);
+            
+                Messages=zeros(NOF,ChunkLength);
+            
+                for i=1:NOF
+                    for j=1:ChunkLength
+                    Messages(i,j)=InputData(j);
+                    end
+                end 
+            
+                if FrameNumberSize==15
+                    j=1;
+                    for i=1:NOF
+                        if i>=2^(FrameNumberSize)-1
+                            j=1;
+                        elseif i==NOF
+                            Frame_number(i,1:16)=decToArray(2^FrameNumberSize,0,16);
+                        
+                        else
+                            Frame_number(i,1:16)=decToArray(j,0,16);
+                        end
+                        j=j+1;
+                    end
+                end    
+            
+                if FrameNumberSize==5
+                    j=1;
+                    for i=1:NOF
+                        if i>=2^FrameNumberSize
+                            j=1;
+                        elseif i==NOF
+                            Frame_number(i,1:6)=decToArray(57,0,6);
+                            break
+                        
+                        else
+                            Frame_number(i,1:6)=decToArray(j,0,6);
+                        end
+                        j=j+1;
+                    end
+                end
+            Messages=[t,Messages,Frame_number];
+        end 
+
+
+        function GDI = golayInput(d,ChunkArray,G,GolayParts,StartValues,Arrays...
+            ,LSF,OutputParts)
+            i=mod(d-1,6)+1;
+            start=StartValues(i);
+            Chunk=LSF(start:start+40-1);
+            ChunkArray(d,:) = [Chunk,decToArray(i,1,8)];
+            for j=1:4
+                section=GolayParts(j);
+                m=ChunkArray(d,section:section+12-1);
+                v=mod(m*G,2);
+                section=OutputParts(j);
+                Arrays(section:section+24-1) = v;
+            end
+            GDI=[0,Arrays];
+        end
        
     end
 
@@ -105,11 +207,11 @@ classdef (StrictDefaults) Channel_Encoder < matlab.System
             obj.PreambleLength = length(obj.PreamblePattern);
 
             %% Sync Burst detectors
-            obj.detectEND = comm.PreambleDetector(obj.EOTPattern,Threshold=obj.ThresholdMetric , Detections="All"); 
-            obj.detectSyncBERT = comm.PreambleDetector(obj.BERTSyncBurst,Threshold=obj.ThresholdMetric , Detections="All");
-            obj.detectSyncLSF = comm.PreambleDetector(obj.LSFSyncBurst,Threshold=obj.ThresholdMetric , Detections="All");
-            obj.detectSyncPacket = comm.PreambleDetector(obj.PacketSyncBurst,Threshold=obj.ThresholdMetric , Detections="All");
-            obj.detectSyncStream = comm.PreambleDetector(obj.StreamSyncBurst,Threshold=obj.ThresholdMetric , Detections="All");
+            obj.EoT= comm.PreambleDetector(obj.EOTPattern,Threshold=obj.ThresholdMetric , Detections="All"); 
+            obj.Preamble = comm.PreambleDetector(obj.BERTSyncBurst,Threshold=obj.ThresholdMetric , Detections="All");
+            obj.LSFSB = comm.PreambleDetector(obj.LSFSyncBurst,Threshold=obj.ThresholdMetric , Detections="All");
+            obj.StreamSB = comm.PreambleDetector(obj.PacketSyncBurst,Threshold=obj.ThresholdMetric , Detections="All");
+            obj.PacketSB = comm.PreambleDetector(obj.StreamSyncBurst,Threshold=obj.ThresholdMetric , Detections="All");
             
             %%
             obj.pDataBufferLength  = obj.pSyncIdxBufferLength*(obj.FrameLength);
