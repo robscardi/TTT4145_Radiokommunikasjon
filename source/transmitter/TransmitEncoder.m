@@ -19,9 +19,6 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
         Destination
         
         FrameLength = 240;
-        LSFSyncBurst = FSKtoQPSK([-3 3]')
-        PacketSyncBurst = FSKtoQPSK([3 3]');
-
     end
     
 
@@ -88,10 +85,12 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
         function setupImpl(obj, x)
             % Perform one-time calculations, such as computing constants
             obj.buffer = dsp.AsyncBuffer(10*obj.FrameLength);
+            
         end
 
         function resetImpl(obj)
             % Initialize internal buffer and related properties
+            obj.state = transmitEncoderStates.WAIT;
         end
         
         function [y, s] = stepImpl(obj,x, begin)
@@ -107,13 +106,13 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
                 case transmitEncoderStates.STARTPREAMBLE
                     obj.state = transmitEncoderStates.LSF;
                     ytemp = Param.Preambles.LSFBinary;
+
                 case transmitEncoderStates.LSF
-                    
-                    ytemp(1:length(obj.LSFSyncBurst)) = obj.LSFSyncBurst(:);
+                    ytemp = [obj.Destination obj.Source];
                     % Golay encoding
                     obj.state = transmitEncoderStates.PACKET;
                 case Packet
-                    ytemp = obj.buffer.read(obj.FrameLength);
+                    ytemp = [obj.buffer.read(200) zeros(40,1)];
                     if ~begin
                         obj.state = transmitEncoderStates.EOT;
                     end
@@ -126,7 +125,7 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
                 y = ytemp;
             else
                 y = coder.nullcopy(zeros(obj.FrameLength, 1, 'like', x));
-                y(:,1) = ytemp;
+                y(:,1) = ytemp(:);
             end
             s = obj.state;
         end
@@ -168,7 +167,7 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
 
         function varargout = getOutputSizeImpl(obj)
             % Return size for each output port
-            varargout = {propagatedInputSize(obj,1), [1,1]};
+            varargout = {[obj.FrameLength,1], [1,1]};
         end
 
         function [out, out2] = getOutputDataTypeImpl(obj)
