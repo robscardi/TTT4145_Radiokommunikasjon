@@ -1,4 +1,4 @@
-classdef frameSyncState < uint8
+classdef frameSyncState < Simulink.IntEnumType
     enumeration 
         NEUTRAL(0)
         LSF(1)
