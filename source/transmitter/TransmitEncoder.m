@@ -19,7 +19,6 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
         Destination
         
         FrameLength = 240;
-        OutputFrameLength = 384;
     end
     
 
@@ -109,11 +108,11 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
                     
 
                 case transmitEncoderStates.LSF
-                    ytemp = [obj.Destination obj.Source];
+                    ytemp = [obj.Destination; obj.Source];
                     % Golay encoding
                     obj.state = transmitEncoderStates.PACKET;
-                case Packet
-                    ytemp = [obj.buffer.read(200) zeros(40,1)];
+                case transmitEncoderStates.PACKET
+                    ytemp = [obj.buffer.read(200); zeros(40,1)];
                     if ~begin
                         obj.state = transmitEncoderStates.EOT;
                     end
@@ -132,7 +131,6 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
         end
 
         function releaseImpl(obj)
-            obj.state = transmitEncoderStates.WAIT;
         end
 
         function validatePropertiesImpl(obj)

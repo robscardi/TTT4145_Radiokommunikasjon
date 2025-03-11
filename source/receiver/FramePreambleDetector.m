@@ -62,7 +62,7 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
     
     properties (Access = private)
         pLastDtMt           % Detection metric for the last preamble in the pPrbStartIdxBuffer
-        pFirstCall = true
+         pFirstCall = true
         pSyncIndexBuffer
         pBufferedFrameType
     end
@@ -140,9 +140,6 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
             flag = false;
         end
         
-        function varargout = isOutputFixedSizeImpl(~)
-            varargout = {true, true};
-        end
 
         function setupImpl(obj, x)
             % Perform one-time calculations, such as computing constants
