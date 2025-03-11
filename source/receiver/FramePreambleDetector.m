@@ -55,8 +55,7 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
 
         pDataBufferLength 
         pDataBuffer 
-        pSyncIndexBuffer
-        pBufferedFrameType
+
         
         Preamble
     end
@@ -64,6 +63,8 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
     properties (Access = private)
         pLastDtMt           % Detection metric for the last preamble in the pPrbStartIdxBuffer
         pFirstCall = true
+        pSyncIndexBuffer
+        pBufferedFrameType
     end
     
     properties (Constant, Access = private)
@@ -123,8 +124,8 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
                 {'finite', 'column'}, [class(obj) '.' 'Input'], 'Input');
             
             coder.internal.errorIf(~obj.pFirstCall && ...
-                length(varargin{1}) > ...
-                (length(obj.ENDPreamble)), ...
+                length(varargin{1}) == ...
+                (length(obj.FrameLength)), ...
                 'comm:FrameSynchronizer:InvalidInputLength');
 
         end
@@ -204,7 +205,6 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
                 if cmet > -1 
                     y = obj.peekFromBuffer(obj.FrameLength);
                     type = frameType.INVALID;
-                    obj.StartedComm = false;
                     obj.currentState = frameSyncState.NEUTRAL;
                 else
                     switch obj.currentState

@@ -15,10 +15,11 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
     % Public, non-tunable properties
     properties (Nontunable)
         
-        Source
+        Source 
         Destination
         
         FrameLength = 240;
+        OutputFrameLength = 384;
     end
     
 
@@ -97,15 +98,15 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
             % Implement algorithm. Calculate y as a function of input u and
             % internal or discrete states.
             if begin 
-                obj.state = transmitEncoderStates.STARTPREAMBLE;
+                obj.state = transmitEncoderStates.START;
             end
             obj.buffer.write(x(:));
-            ytemp = zeroes(obj.FrameLength, 1);
+            ytemp = zeros(obj.FrameLength, 1);
             
             switch obj.state
-                case transmitEncoderStates.STARTPREAMBLE
+                case transmitEncoderStates.START
                     obj.state = transmitEncoderStates.LSF;
-                    ytemp = Param.Preambles.LSFBinary;
+                    
 
                 case transmitEncoderStates.LSF
                     ytemp = [obj.Destination obj.Source];
@@ -117,7 +118,7 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
                         obj.state = transmitEncoderStates.EOT;
                     end
                 case transmitEncoderStates.EOT
-                    ytemp = Param.EOT.EoTBinary;
+                    
                     obj.state = transmitEncoderStates.WAIT;
             end
 

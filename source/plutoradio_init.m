@@ -48,7 +48,7 @@ SimParams.PlutoCenterFrequency      = 928e6;
 SimParams.PlutoGain                 = 30;
 SimParams.PlutoFrontEndSampleRate   = SimParams.Fs;
 SimParams.PlutoFrameLength          = SimParams.Interpolation * SimParams.FrameSize;
-
+SimParams.MaximumFrequencyOffset    = SimParams.Fs/SimParams.ModulationOrder *0.99;
 %% Experiment parameters
 SimParams.PlutoFrameTime = SimParams.PlutoFrameLength / SimParams.PlutoFrontEndSampleRate;
 SimParams.StopTime = 10;
@@ -86,6 +86,7 @@ SimParams.Channels = [Band900(1):SimParams.ChannelSpacing:Band900(2) ...
     "55", "5D", "55", "5D", "55", "5D", "55", "5D", "55", "5D", ...
     "55", "5D", "55", "5D", "55", "5D", "55", "5D", "55", "5D", ...
     "55", "5D", "55", "5D", "55", "5D", "55", "5D"],1)';
+    SimParams.EOT.EoTSymbols = mod_wrap(hexToArray(["55", "5D"],1)', "bit"); 
     %% Interleaving Table
     %Interleaving Table
     InterleavingVector=zeros(367,1);

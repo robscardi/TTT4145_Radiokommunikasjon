@@ -67,7 +67,7 @@ classdef (StrictDefaults) SelectHeader < matlab.System
             if comm.internal.utilities.isSim()
                 y = ytemp;
             else
-                y = coder.nullcopy(zeros(obj.FrameLength, 1, 'like', x));
+                y = coder.nullcopy(zeros(8,1, 'like', obj.LSFSyncBurst));
                 y(:,1) = ytemp;
             end
 
