@@ -123,10 +123,10 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
             validateattributes(varargin{1}, {'double','single'}, ...
                 {'finite', 'column'}, [class(obj) '.' 'Input'], 'Input');
             
-            coder.internal.errorIf(~obj.pFirstCall && ...
-                length(varargin{1}) >= ...
-                (length(obj.FrameLength)), ...
-                'comm:FrameSynchronizer:InvalidInputLength');
+            % coder.internal.errorIf(~obj.pFirstCall && ...
+            %     length(varargin{1}) >= ...
+            %     (length(obj.FrameLength)), ...
+            %     'comm:FrameSynchronizer:InvalidInputLength');
 
         end
 
@@ -140,9 +140,6 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
             flag = false;
         end
         
-        function varargout = isOutputFixedSizeImpl(~)
-            varargout = {true, true};
-        end
 
         function setupImpl(obj, x)
             % Perform one-time calculations, such as computing constants
@@ -213,6 +210,7 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
                     y = obj.peekFromBuffer(obj.FrameLength);
                     type = frameType.INVALID;
                     obj.currentState = frameSyncState.NEUTRAL;
+                    obj.commStarted = false;
                 else
                     switch obj.currentState
                         case frameSyncState.STREAM
