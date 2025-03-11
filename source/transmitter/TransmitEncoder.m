@@ -106,7 +106,7 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
             switch obj.state
                 case transmitEncoderStates.STARTPREAMBLE
                     obj.state = transmitEncoderStates.LSF;
-
+                    ytemp = Param.Preambles.LSFBinary;
                 case transmitEncoderStates.LSF
                     
                     ytemp(1:length(obj.LSFSyncBurst)) = obj.LSFSyncBurst(:);
