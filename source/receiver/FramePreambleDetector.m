@@ -130,16 +130,19 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
 
         end
 
-        % function flag = isInputSizeMutableImpl(~,~)
-        %     % Return false if input size cannot change
-        %     % between calls to the System object
-        %     flag = false;
-        % end
+        function flag = isInputSizeMutableImpl(~,~)
+            % Return false if input size cannot change
+            % between calls to the System object
+            flag = true;
+        end
 
         function flag = isInactivePropertyImpl(~, ~)
             flag = false;
         end
-
+        
+        function varargout = isOutputFixedSizeImpl(~)
+            varargout = {true, true};
+        end
 
         function setupImpl(obj, x)
             % Perform one-time calculations, such as computing constants
