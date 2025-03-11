@@ -70,7 +70,7 @@ SimParams.Channels = [Band900(1):SimParams.ChannelSpacing:Band900(2) ...
     "77", "77", "77", "77", "77", "77", "77", "77", "77", "77", ...
     "77", "77", "77", "77", "77", "77", "77", "77"],1)';
     SimParams.Preambles.BERT = repmat([-3 +3]', 96,1);
-
+    SimParams.Preambles.LSFSymbol = mod_wrap(SimParams.Preambles.LSFBinary, "bit");
     %% Sync Burst 
     SimParams.SyncBurst.LSF = [+3, +3, +3, +3, -3, -3, +3, -3]';
     SimParams.SyncBurst.LSFBinary = hexToArray(["55", "F7"],1)';
