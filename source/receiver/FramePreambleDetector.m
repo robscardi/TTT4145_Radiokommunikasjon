@@ -124,15 +124,19 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
                 {'finite', 'column'}, [class(obj) '.' 'Input'], 'Input');
             
             coder.internal.errorIf(~obj.pFirstCall && ...
-                length(varargin{1}) == ...
+                length(varargin{1}) >= ...
                 (length(obj.FrameLength)), ...
                 'comm:FrameSynchronizer:InvalidInputLength');
 
         end
 
-        function flag = isInputSizeMutableImpl(~,~)
-            % Return false if input size cannot change
-            % between calls to the System object
+        % function flag = isInputSizeMutableImpl(~,~)
+        %     % Return false if input size cannot change
+        %     % between calls to the System object
+        %     flag = false;
+        % end
+
+        function flag = isInactivePropertyImpl(~, ~)
             flag = false;
         end
 
