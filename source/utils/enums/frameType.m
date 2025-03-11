@@ -1,4 +1,4 @@
-classdef frameType < uint8
+classdef frameType < Simulink.IntEnumType
     %FRAMETYPE Summary of this class goes here
     %   Detailed explanation goes here
     enumeration

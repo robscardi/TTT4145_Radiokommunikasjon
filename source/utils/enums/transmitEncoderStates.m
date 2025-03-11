@@ -1,4 +1,4 @@
-classdef transmitEncoderStates < uint8
+classdef transmitEncoderStates < Simulink.IntEnumType
     enumeration
         WAIT(0)
         LSF(1)
