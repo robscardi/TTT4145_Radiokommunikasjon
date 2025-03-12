@@ -23,16 +23,9 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
         StreamSyncBurst {mustBeFloat, mustBeFinite} = [3 -3]'
         PacketSyncBurst {mustBeFloat, mustBeFinite} = [3 -3]'
         FrameLength {mustBeInteger, mustBeFinite} = 192
-
-    end
-    
-    properties 
-    
-
         ThresholdMetric (1,1) {mustBeFloat, mustBeReal, mustBeFinite, mustBeNonnegative} = 20
-    
     end
-   
+      
 
     % Discrete state properties
     properties (DiscreteState)
@@ -58,6 +51,7 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
 
         
         Preamble
+        EOT
     end
     
     properties (Access = private)
@@ -146,9 +140,10 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
             
             obj.SyncLength = length(obj.BERTSyncBurst);
             obj.PreambleLength = length(obj.PreamblePattern);
+            obj.EOT = repmat(obj.EOTPattern, 4,1);
 
             %% Sync Burst detectors
-            obj.detectEND = comm.PreambleDetector(obj.EOTPattern,Threshold=obj.ThresholdMetric , Detections="All"); 
+            obj.detectEND = comm.PreambleDetector(obj.EOT,Threshold=obj.ThresholdMetric*2 , Detections="All"); 
             obj.detectSyncBERT = comm.PreambleDetector(obj.BERTSyncBurst,Threshold=obj.ThresholdMetric , Detections="All");
             obj.detectSyncLSF = comm.PreambleDetector(obj.LSFSyncBurst,Threshold=obj.ThresholdMetric , Detections="All");
             obj.detectSyncPacket = comm.PreambleDetector(obj.PacketSyncBurst,Threshold=obj.ThresholdMetric , Detections="All");
@@ -164,8 +159,6 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
             setup(obj.pDataBuffer, cast(1,'like',x));
             obj.commStarted = false;
             obj.currentState = frameSyncState.NEUTRAL;
-
-            obj.Preamble = repmat(obj.PreamblePattern, floor(obj.FrameLength/obj.PreambleLength),1);
         end
 
         function resetImpl(obj)
@@ -203,47 +196,40 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
             buffer = obj.pDataBuffer.peek(obj.pDataBufferLength);
 
             if obj.commStarted && obj.pSyncIndexBuffer < 0
-                [c_, cmet_] =   obj.detectEND(buffer);
-                [~, cmet] =   obj.analyzeDetectReturn(c_, cmet_);
-                
-                if cmet > -1 
-                    y = obj.peekFromBuffer(obj.FrameLength);
-                    type = frameType.INVALID;
-                    obj.currentState = frameSyncState.NEUTRAL;
-                    obj.commStarted = false;
-                else
-                    switch obj.currentState
-                        case frameSyncState.STREAM
-                            t = obj.detectSync(obj.detectSyncStream, buffer);
-                            if t
-                                obj.pBufferedFrameType = frameType.STREAM;
-                                obj.allignSync(obj.pSyncIndexBuffer)
-                            end
-                            
-                        case frameSyncState.PACKET
-                            t = obj.detectSync(obj.detectSyncPacket, buffer);
-                            if t
-                                obj.pBufferedFrameType = frameType.PACKET;
-                                obj.allignSync(obj.pSyncIndexBuffer)
-                            end
-                            
-                        case frameSyncState.BERT %UNUSED
-                            t = obj.detectSync(obj.detectSyncBERT, buffer);
-                            if t
-                                obj.pBufferedFrameType = frameType.BERT;
-                                obj.allignSync(obj.pSyncIndexBuffer)
-                            end
-                        case frameSyncState.LSF
-                            t = obj.detectSync(obj.detectSyncLSF, buffer);
-                            if t
-                                obj.pBufferedFrameType = frameType.LSF;
-                                obj.currentState = frameSyncState.PACKET;
-                                obj.allignSync(obj.pSyncIndexBuffer)
-                            end
-                    end
+                switch obj.currentState
+                    case frameSyncState.STREAM
+                        t = obj.detectSync(obj.detectSyncStream, buffer);
+                        if t
+                            obj.pBufferedFrameType = frameType.STREAM;
+                            obj.allignSync(obj.pSyncIndexBuffer)
+                        end
+
+                    case frameSyncState.PACKET
+                        t = obj.detectSync(obj.detectSyncPacket, buffer);
+                        if t
+                            obj.pBufferedFrameType = frameType.PACKET;
+                            obj.allignSync(obj.pSyncIndexBuffer)
+                        elseif obj.detectSync(obj.detectEND, buffer)
+                            obj.pBufferedFrameType = frameType.INVALID;
+                            obj.pSyncIndexBuffer = -1;
+                        end
+
+                    case frameSyncState.BERT %UNUSED
+                        t = obj.detectSync(obj.detectSyncBERT, buffer);
+                        if t
+                            obj.pBufferedFrameType = frameType.BERT;
+                            obj.allignSync(obj.pSyncIndexBuffer)
+                        end
+                    case frameSyncState.LSF
+                        t = obj.detectSync(obj.detectSyncLSF, buffer);
+                        if t
+                            obj.pBufferedFrameType = frameType.LSF;
+                            obj.currentState = frameSyncState.PACKET;
+                            obj.allignSync(obj.pSyncIndexBuffer)
+                        end
                 end
             elseif ~obj.commStarted
-                metric = xcorr(buffer, obj.Preamble);
+                metric = xcorr(buffer, obj.PreamblePattern);
                 [value, idx] = max(abs(metric(1:obj.pDataBufferLength)));
                 %idx = idx - obj.FrameLength;
                 if value > 200 && idx > obj.FrameLength-1

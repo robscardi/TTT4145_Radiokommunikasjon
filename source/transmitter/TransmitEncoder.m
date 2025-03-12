@@ -96,17 +96,17 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
         function [y, s] = stepImpl(obj,x, begin)
             % Implement algorithm. Calculate y as a function of input u and
             % internal or discrete states.
-            if begin 
-                obj.state = transmitEncoderStates.START;
-            end
             obj.buffer.write(x(:));
             ytemp = zeros(obj.FrameLength, 1);
-            
+
             switch obj.state
+                case transmitEncoderStates.WAIT
+                    if(begin)
+                        obj.state = transmitEncoderStates.START;
+                    end
                 case transmitEncoderStates.START
                     obj.state = transmitEncoderStates.LSF;
                     
-
                 case transmitEncoderStates.LSF
                     ytemp = [obj.Destination; obj.Source];
                     % Golay encoding
@@ -120,6 +120,7 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
                     
                     obj.state = transmitEncoderStates.WAIT;
             end
+
 
             if comm.internal.utilities.isSim()
                 y = ytemp;
