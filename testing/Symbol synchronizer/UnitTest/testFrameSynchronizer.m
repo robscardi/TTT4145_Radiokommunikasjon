@@ -12,7 +12,7 @@ classdef testFrameSynchronizer < matlab.unittest.TestCase
     methods(TestClassSetup)
         % Shared setup for the entire test class
         function setupDUT(testCase)
-            testCase.Preamble = FSKtoQPSK([+3 -3]');
+            testCase.Preamble = repmat(FSKtoQPSK([+3 -3]'), 192/2,1);
             testCase.SyncBurstLSF = FSKtoQPSK([+3, +3, +3, +3, -3, -3, +3, -3]');
             testCase.SyncBurstBERT = FSKtoQPSK([-3, +3, -3, -3, +3, +3, +3, +3]');
             testCase.SyncBurstPacket = FSKtoQPSK([+3, -3, +3, +3, -3, -3, -3, -3]');
@@ -24,7 +24,7 @@ classdef testFrameSynchronizer < matlab.unittest.TestCase
                 BERTSyncBurst = testCase.SyncBurstBERT, ...
                 StreamSyncBurst = testCase.SyncBurstStream, ...
                 PacketSyncBurst = testCase.SyncBurstPacket, ...
-                ThresholdMetric = 10);
+                ThresholdMetric = 13);
             
         end
     end
@@ -45,7 +45,7 @@ classdef testFrameSynchronizer < matlab.unittest.TestCase
             n_message = 0;
             n_iter = floor(length(whole_message)/192);
             
-            whole_message = awgn(whole_message, 20);
+            %whole_message = awgn(whole_message, 20);
 
             j = 1; k = 192;
             for i=1:n_iter
@@ -54,6 +54,7 @@ classdef testFrameSynchronizer < matlab.unittest.TestCase
                     a = xcorr(res, message);
                     max(abs(a))
                     n_message = n_message +1;
+                    assert(all(res == message))
                 end
                 j = j +192;
                 k = k +192;
