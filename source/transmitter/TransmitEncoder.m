@@ -34,6 +34,7 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
     end
     
     properties (Access = private)
+        counter
     end
     
     properties (Constant, Access = private)
@@ -85,12 +86,14 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
         function setupImpl(obj, x)
             % Perform one-time calculations, such as computing constants
             obj.buffer = dsp.AsyncBuffer(10*obj.FrameLength);
+            obj.counter = 0;
             
         end
 
         function resetImpl(obj)
             % Initialize internal buffer and related properties
             obj.state = transmitEncoderStates.WAIT;
+            obj.counter = 0;
         end
         
         function [y, s] = stepImpl(obj,x, begin)
@@ -105,10 +108,15 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
                         obj.state = transmitEncoderStates.START;
                     end
                 case transmitEncoderStates.START
-                    obj.state = transmitEncoderStates.LSF;
                     
+                    if(obj.counter == 5)
+                        obj.state = transmitEncoderStates.LSF;
+                    end
+                    obj.counter = obj.counter+1;
+
                 case transmitEncoderStates.LSF
                     ytemp = [obj.Destination; obj.Source];
+                    obj.counter = 0;
                     % Golay encoding
                     obj.state = transmitEncoderStates.PACKET;
                 case transmitEncoderStates.PACKET

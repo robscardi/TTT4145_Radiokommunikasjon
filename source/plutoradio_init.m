@@ -59,6 +59,7 @@ Band24 = [2.4 2.5]*1e3;
 SimParams.Channels = [Band900(1):SimParams.ChannelSpacing:Band900(2) ...
     Band24(1):SimParams.ChannelSpacing:Band24(2) ] ...
     + SimParams.ChannelSpacing/2;
+SimParams.DutyCycle = 100;
 %% Protocol specifications
 
     %% Preambles
