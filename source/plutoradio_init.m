@@ -72,13 +72,23 @@ SimParams.Channels = [Band900(1):SimParams.ChannelSpacing:Band900(2) ...
     SimParams.Preambles.BERT = repmat([-3 +3]', 96,1);
     SimParams.Preambles.LSFSymbol = mod_wrap(SimParams.Preambles.LSFBinary, "bit");
     %% Sync Burst 
+    
     SimParams.SyncBurst.LSF = [+3, +3, +3, +3, -3, -3, +3, -3]';
     SimParams.SyncBurst.LSFBinary = hexToArray(["55", "F7"],1)';
+    SimParams.SyncBurst.LSFSymbol = mod_wrap(SimParams.SyncBurst.LSFBinary, "bit");
+    
     SimParams.SyncBurst.BERT = [-3, +3, -3, -3, +3, +3, +3, +3]';
+    SimParams.SyncBurst.BERTBinary = hexToArray(["DF", "55"], 1)';
+    SimParams.SyncBurst.BERTSymbol = mod_wrap(SimParams.SyncBurst.BERTBinary, "bit");
+   
     SimParams.SyncBurst.Stream = [-3, -3, -3, -3, +3, +3, -3, +3]';
     SimParams.SyncBurst.StreamBinary = hexToArray(["FF", "5D"],1)';
+    SimParams.SyncBurst.StreamSymbol = mod_wrap(SimParams.SyncBurst.StreamBinary, "bit");
+
     SimParams.SyncBurst.Packet = [+3, -3, +3, +3, -3, -3, -3, -3]';
     SimParams.SyncBurst.PacketBinary = hexToArray(["75", "FF"],1)';
+    SimParams.SyncBurst.PacketSymbol = mod_wrap(SimParams.SyncBurst.PacketBinary, "bit");
+    
     %% EOT
     SimParams.EOT.EoTBinary = hexToArray([
     "55", "5D", "55", "5D", "55", "5D", "55", "5D", "55", "5D", ...
@@ -123,15 +133,6 @@ SimParams.Channels = [Band900(1):SimParams.ChannelSpacing:Band900(2) ...
     SimParams.Golay.Matrix.OutputParts=[1,25,49,73];
     SimParams.Golay.Matrix.EncodedOutput=zeros(1,96);
 
-    %% Preables
-    SimParams.Preamble = FSKtoQPSK([+3 -3]');
-    SimParams.EOTPattern = FSKtoQPSK([+3, +3, +3, +3, +3, +3, -3, +3]);
-
-    %% Sinc Burst 
-    SimParams.SyncBurst.LSF = FSKtoQPSK([+3, +3, +3, +3, -3, -3, +3, -3]');
-    SimParams.SyncBurst.BERT = FSKtoQPSK([-3, +3, -3, -3, +3, +3, +3, +3]');
-    SimParams.SyncBurst.Stream = FSKtoQPSK([-3, -3, -3, -3, +3, +3, -3, +3]');
-    SimParams.SyncBurst.Packet = FSKtoQPSK([+3, -3, +3, +3, -3, -3, -3, -3]');
     %% Source and Destination
     SimParams.Source = hexToArray([
     "D6", "B5", "E2", "30", "82", "FF", "84", "62", "BA", "4E", ...
