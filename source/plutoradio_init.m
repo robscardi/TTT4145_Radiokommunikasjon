@@ -71,7 +71,7 @@ SimParams.PlutoCenterFrequency      = SimParams.Channels(2)*1e6;
     "77", "77", "77", "77", "77", "77", "77", "77", "77", "77", ...
     "77", "77", "77", "77", "77", "77", "77", "77"],1)';
     SimParams.Preambles.BERT = repmat([-3 +3]', 96,1);
-    SimParams.Preambles.LSFSymbol = mod_wrap(SimParams.Preambles.LSFBinary, "bit");
+    SimParams.Preambles.LSFSymbol = repmat([1+1i -1-1i 1-1i -1+1i], 192/4,1); %mod_wrap(SimParams.Preambles.LSFBinary, "bit");
     %% Sync Burst 
     
     SimParams.SyncBurst.LSF = [+3, +3, +3, +3, -3, -3, +3, -3]';
