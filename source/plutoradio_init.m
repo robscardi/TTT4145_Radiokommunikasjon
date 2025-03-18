@@ -44,7 +44,6 @@ SimParams.PreambleDetectionThreshold    = 0.8;
 
 
 %% Pluto receiver parameters
-SimParams.PlutoCenterFrequency      = 2.4e9;
 SimParams.PlutoGain                 = 0;
 SimParams.PlutoFrontEndSampleRate   = SimParams.Fs;
 SimParams.PlutoFrameLength          = SimParams.Interpolation * SimParams.FrameSize;
@@ -60,6 +59,7 @@ SimParams.Channels = [Band900(1):SimParams.ChannelSpacing:Band900(2) ...
     Band24(1):SimParams.ChannelSpacing:Band24(2) ] ...
     + SimParams.ChannelSpacing/2;
 SimParams.DutyCycle = 100;
+SimParams.PlutoCenterFrequency      = SimParams.Channels(1)*1e6;
 %% Protocol specifications
 
     %% Preambles
