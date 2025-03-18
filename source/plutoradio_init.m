@@ -4,7 +4,7 @@ Param = init();
 function SimParams = init
 %
 %% General simulation parameters
-SimParams.Rsym = 4*9e3;             % Symbol rate in Hertz
+SimParams.Rsym = 9e3;             % Symbol rate in Hertz
 SimParams.ModulationOrder = 4;      % QPSK alphabet size
 SimParams.SymbolBitNumber = log2(SimParams.ModulationOrder);
 SimParams.Interpolation = 10;        % Interpolation factor
@@ -59,7 +59,7 @@ SimParams.Channels = [Band900(1):SimParams.ChannelSpacing:Band900(2) ...
     Band24(1):SimParams.ChannelSpacing:Band24(2) ] ...
     + SimParams.ChannelSpacing/2;
 SimParams.DutyCycle = 100;
-SimParams.PlutoCenterFrequency      = SimParams.Channels(2)*1e6;
+SimParams.PlutoCenterFrequency      = SimParams.Channels(4)*1e6;
 %% Protocol specifications
 
     %% Preambles
