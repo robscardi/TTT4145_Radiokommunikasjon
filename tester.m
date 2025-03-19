@@ -2,14 +2,11 @@
 close all
 clear variables
 
-samp_rate_hz = 8000;
-samp_rate_frame = 25;
+samp_rate_hz = 15000;
+samp_rate_frame = 300;
                  % HZ  , BYTE CNT
-tx = soundTransmit(samp_rate_hz, samp_rate_frame);
-tx.init();
-%tx.start_reader();
-
-%rx = s_recover();
+tx = s_transmit(samp_rate_hz, samp_rate_frame);
+rx = s_recover(samp_rate_hz, samp_rate_frame);
 
 %% Record Msg
 
@@ -18,6 +15,7 @@ global e;
 press = 0;
 e = uicontrol("Style","pushbutton","String","Stop Button",Callback=@s);
 
+% Needed for button to work and trigger within while loop
 function s(src, event)
     global press;
     global e;
@@ -28,30 +26,22 @@ end
 
 pause(1);
 
-out = [];
 res = [];
 
 while (~press)
-    res = tx();
-    res(res == '-') = [];
+    %Get Sound Data
+    otu = tx();
+    rx(otu);
+    %Recommend hz = 15000, frame = 300
+    %If you want i can introduce a splice method bcs rn one packet is at
+    %2400x1 instead of 200, the quality was too bad and this seems like
+    %perfect spot
+    % You can test it at hz 10000, frame 200 meaning the packet is 1600x1
 
-    if ~isempty(res)
-        out = [out; res';];
-        %sound_d = rx(res);
-        %sound(sound_d, samp_rate_hz);
-    end
-
-    %if ~isempty(res)
-    %    out = [out; res];
-    %end
-
+    %The sound was much better with packets of 6800x1 at hz = 16000 and
+    %frame = 800-400 It was Really good at hz = 16000 and frame = 1600
+    %Aka higher frame higher qulity. (Try to match frame as a factor of hz)
+    
     % Needed so the button press can be detected.
     pause(0.0001);
 end
-
-%% Play Sound
-
-% Probably can integrate this one into s_recover stepImpl but not sure how
-% the sound driver would behave?
-
-sound(sound_arr, samp_rate_hz);
