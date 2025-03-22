@@ -44,7 +44,7 @@ SimParams.PreambleDetectionThreshold    = 0.8;
 
 
 %% Pluto receiver parameters
-SimParams.PlutoCenterFrequency      = 2.4e9;
+SimParams.PlutoCenterFrequency      = 915e6;
 SimParams.PlutoGain                 = 0;
 SimParams.PlutoFrontEndSampleRate   = SimParams.Fs;
 SimParams.PlutoFrameLength          = SimParams.Interpolation * SimParams.FrameSize;
