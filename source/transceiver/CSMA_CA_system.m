@@ -11,8 +11,6 @@ classdef (StrictDefaults) CSMA_CA_system < matlab.System
     properties
         Power_level = 3
         Probability = 0.25
-        
-
     end
 
     % Public, non-tunable properties
@@ -29,6 +27,7 @@ classdef (StrictDefaults) CSMA_CA_system < matlab.System
     properties (Access = private)
         time
         buffer
+        dim
     end
 
     methods
@@ -41,24 +40,35 @@ classdef (StrictDefaults) CSMA_CA_system < matlab.System
 
     methods (Access = protected)
         %% Common functions
-        function setupImpl(obj)
+        function setupImpl(obj, x)
             % Perform one-time calculations, such as computing constants
             obj.time = -1;
             obj.buffer = dsp.AsyncBuffer(15);
+            obj.dim = size(x);
         end
 
         function y = stepImpl(obj, powerlevel, started, frame)
             % Implement algorithm. Calculate y as a function of input u and
             % internal or discrete states.
+            ytemp = zeros(obj.dim);
+            obj.buffer.write(frame);
             if started
-                if any(powerlevel > obj.Power_level)
-                    time = 
+                if ~any(powerlevel > obj.Power_level)
+                    ytemp = obj.buffer.read(1);
                 end
+            end
+
+            if comm.internal.utilities.isSim()
+                y = ytemp;
+            else
+                y = coder.nullcopy(zeros(obj.FrameLength, 1, 'like', x));
+                y(:,1) = ytemp;
             end
         end
 
         function resetImpl(obj)
             % Initialize / reset internal or discrete properties
+            obj.buffer.reset()
         end
 
         %% Backup/restore functions
@@ -90,10 +100,9 @@ classdef (StrictDefaults) CSMA_CA_system < matlab.System
 
         function out = getOutputSizeImpl(obj)
             % Return size for each output port
-            out = [1 1];
-
+            
             % Example: inherit size from first input port
-            % out = propagatedInputSize(obj,1);
+            out = propagatedInputSize(obj,1);
         end
 
         function icon = getIconImpl(obj)
