@@ -7,15 +7,13 @@ function SimParams = init
 SimParams.Rsym = 9e3;             % Symbol rate in Hertz
 SimParams.ModulationOrder = 4;      % QPSK alphabet size
 SimParams.SymbolBitNumber = log2(SimParams.ModulationOrder);
-SimParams.Interpolation = 10;        % Interpolation factor
+SimParams.Interpolation = 16;        % Interpolation factor
 SimParams.Decimation = 1;           % Decimation factor
 SimParams.Tsym = 1/SimParams.Rsym;  % Symbol time in sec
 SimParams.Fs   = SimParams.Rsym * SimParams.Interpolation; % Sample rate
 
 %% Frame Specifications
-% [BarkerCode*2 | 'Hello world 000\n' | 'Hello world 001\n' ... | 'Hello world 099\n'];
-barker = comm.BarkerCode(Length=13, SamplesPerFrame=13);
-SimParams.Barker            = barker();
+
 SimParams.FrameSize       = 192; % symbols                                    % Frame size in symbols
 SimParams.FrameTime       = SimParams.Tsym*SimParams.FrameSize;
 %% Rx parameters
@@ -23,7 +21,7 @@ SimParams.RolloffFactor     = 0.5;                      % Rolloff Factor of Rais
 SimParams.ScramblerBase     = 2;
 SimParams.ScramblerPolynomial           = [1 1 1 0 1];
 SimParams.ScramblerInitialConditions    = [0 0 0 0];
-SimParams.RaisedCosineFilterSpan = 8;                  % Filter span of Raised Cosine Tx Rx filters (in symbols)
+SimParams.RaisedCosineFilterSpan = 32;                  % Filter span of Raised Cosine Tx Rx filters (in symbols)
 SimParams.DesiredPower                  = 2;            % AGC desired output power (in watts)
 SimParams.AveragingLength               = 50;           % AGC averaging length
 SimParams.MaxPowerGain                  = 60;           % AGC maximum output power gain
@@ -44,11 +42,10 @@ SimParams.PreambleDetectionThreshold    = 0.8;
 
 
 %% Pluto receiver parameters
-SimParams.PlutoCenterFrequency      = 915e6;
 SimParams.PlutoGain                 = 0;
 SimParams.PlutoFrontEndSampleRate   = SimParams.Fs;
 SimParams.PlutoFrameLength          = SimParams.Interpolation * SimParams.FrameSize;
-SimParams.MaximumFrequencyOffset    = SimParams.Fs/SimParams.ModulationOrder *0.99;
+SimParams.MaximumFrequencyOffset    = SimParams.Fs/SimParams.ModulationOrder;
 %% Experiment parameters
 SimParams.PlutoFrameTime = SimParams.PlutoFrameLength / SimParams.PlutoFrontEndSampleRate;
 SimParams.StopTime = 10;
@@ -60,6 +57,7 @@ SimParams.Channels = [Band900(1):SimParams.ChannelSpacing:Band900(2) ...
     Band24(1):SimParams.ChannelSpacing:Band24(2) ] ...
     + SimParams.ChannelSpacing/2;
 SimParams.DutyCycle = 100;
+SimParams.PlutoCenterFrequency      = SimParams.Channels(1)*1e6;
 %% Protocol specifications
 
     %% Preambles
@@ -71,7 +69,7 @@ SimParams.DutyCycle = 100;
     "77", "77", "77", "77", "77", "77", "77", "77", "77", "77", ...
     "77", "77", "77", "77", "77", "77", "77", "77"],1)';
     SimParams.Preambles.BERT = repmat([-3 +3]', 96,1);
-    SimParams.Preambles.LSFSymbol = mod_wrap(SimParams.Preambles.LSFBinary, "bit");
+    SimParams.Preambles.LSFSymbol = repmat([1+1i -1-1i 1-1i -1+1i]', 192/4,1); %mod_wrap(SimParams.Preambles.LSFBinary, "bit");
     %% Sync Burst 
     
     SimParams.SyncBurst.LSF = [+3, +3, +3, +3, -3, -3, +3, -3]';
