@@ -110,7 +110,7 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
                 case transmitEncoderStates.START
                     
                     obj.state = transmitEncoderStates.START;
-                    if(obj.counter == 10000)
+                    if(obj.counter == 100)
                         obj.state = transmitEncoderStates.LSF;
                     end
                     obj.counter = obj.counter+1;
