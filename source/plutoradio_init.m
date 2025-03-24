@@ -69,7 +69,14 @@ SimParams.PlutoCenterFrequency      = SimParams.Channels(1)*1e6;
     "77", "77", "77", "77", "77", "77", "77", "77", "77", "77", ...
     "77", "77", "77", "77", "77", "77", "77", "77"],1)';
     SimParams.Preambles.BERT = repmat([-3 +3]', 96,1);
-    SimParams.Preambles.LSFSymbol = repmat([1+1i -1-1i 1-1i -1+1i]', 192/4,1); %mod_wrap(SimParams.Preambles.LSFBinary, "bit");
+
+    pn = comm.PNSequence('Polynomial', 'x9+x5+1', 'InitialConditions', [zeros(1, 8) 1]);
+    pn.SamplesPerFrame = 192*2;
+    in = pn();
+    usedInput = in(1:log2(M)*(floor(length(in)/log2(M))));
+
+
+    SimParams.Preambles.LSFSymbol = mod_wrap(usedInput, "bit");
     %% Sync Burst 
     
     SimParams.SyncBurst.LSF = [+3, +3, +3, +3, -3, -3, +3, -3]';

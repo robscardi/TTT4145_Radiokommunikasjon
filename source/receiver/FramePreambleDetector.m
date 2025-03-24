@@ -104,7 +104,9 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
             end
         end
         function allignSync(obj, idx)
-            obj.discardFromBuffer(idx-obj.SyncLength);
+            if(idx-obj.SyncLength > 0)
+                obj.discardFromBuffer(idx-obj.SyncLength);
+            end
         end
     end
 
