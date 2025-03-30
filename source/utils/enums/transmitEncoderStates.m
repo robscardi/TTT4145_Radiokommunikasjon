@@ -5,6 +5,7 @@ classdef transmitEncoderStates < Simulink.IntEnumType
         PACKET(2)
         START(4)
         EOT(8)
+        INITIALGARBAGE(16)
     end
 end
 

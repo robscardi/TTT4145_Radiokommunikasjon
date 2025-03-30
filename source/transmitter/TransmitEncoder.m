@@ -107,14 +107,14 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
                     if(begin)
                         obj.state = transmitEncoderStates.START;
                     end
+                case transmitEncoderStates.INITIALGARBAGE
+                    if (obj.counter == 20)
+                        obj.state = transmitEncoderStates.START;
+                    end
                 case transmitEncoderStates.START
                     
-                    obj.state = transmitEncoderStates.START;
-                    if(obj.counter == 100)
-                        obj.state = transmitEncoderStates.LSF;
-                    end
-                    obj.counter = obj.counter+1;
-
+                     obj.state = transmitEncoderStates.LSF;
+                    
                 case transmitEncoderStates.LSF
                     ytemp = [obj.Destination; obj.Source];
                     obj.counter = 0;
