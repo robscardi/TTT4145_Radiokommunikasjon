@@ -69,7 +69,7 @@ SimParams.PlutoCenterFrequency      = SimParams.Channels(1)*1e6;
     "77", "77", "77", "77", "77", "77", "77", "77", "77", "77", ...
     "77", "77", "77", "77", "77", "77", "77", "77"],1)';
     SimParams.Preambles.BERT = repmat([-3 +3]', 96,1);
-
+    M = SimParams.ModulationOrder;
     pn = comm.PNSequence('Polynomial', 'x9+x5+1', 'InitialConditions', [zeros(1, 8) 1]);
     pn.SamplesPerFrame = 192*2;
     in = pn();
