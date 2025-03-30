@@ -4,7 +4,7 @@ Param = init();
 function SimParams = init
 %
 %% General simulation parameters
-SimParams.Rsym = 9e3;             % Symbol rate in Hertz
+SimParams.Rsym = 4*9e3;             % Symbol rate in Hertz
 SimParams.ModulationOrder = 4;      % QPSK alphabet size
 SimParams.SymbolBitNumber = log2(SimParams.ModulationOrder);
 SimParams.Interpolation = 16;        % Interpolation factor
@@ -69,14 +69,15 @@ SimParams.PlutoCenterFrequency      = SimParams.Channels(1)*1e6;
     "77", "77", "77", "77", "77", "77", "77", "77", "77", "77", ...
     "77", "77", "77", "77", "77", "77", "77", "77"],1)';
     SimParams.Preambles.BERT = repmat([-3 +3]', 96,1);
-
+    
+    M = SimParams.ModulationOrder;
     pn = comm.PNSequence('Polynomial', 'x9+x5+1', 'InitialConditions', [zeros(1, 8) 1]);
     pn.SamplesPerFrame = 192*2;
     in = pn();
     usedInput = in(1:log2(M)*(floor(length(in)/log2(M))));
 
 
-    SimParams.Preambles.LSFSymbol = mod_wrap(usedInput, "bit");
+    SimParams.Preambles.LSFSymbol = mod_wrap(SimParams.Preambles.LSFBinary, "bit");
     %% Sync Burst 
     
     SimParams.SyncBurst.LSF = [+3, +3, +3, +3, -3, -3, +3, -3]';
