@@ -1,6 +1,12 @@
 
 Param = init();
 
+ilbc = load("audioStruct.mat",'ilbc');
+ilbc = ilbc.ilbc;
+ilbcMode=ilbc.ilbcMode;
+ilbcDatatype = ilbc.ilbcDatatype;
+
+
 function SimParams = init
 %
 %% General simulation parameters
