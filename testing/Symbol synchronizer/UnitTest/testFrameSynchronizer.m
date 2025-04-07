@@ -36,7 +36,7 @@ classdef testFrameSynchronizer < matlab.unittest.TestCase
     methods(Test)
         % Test methods
         
-        function Test1(testCase)
+        function Test_wo_noise(testCase)
             message = [testCase.SyncBurstPacket; mod_wrap(randi([0 1],184*2,1), "bit")];
             noise = randomNoise(1000);
             header = repmat(testCase.Preamble, 192/2,1);

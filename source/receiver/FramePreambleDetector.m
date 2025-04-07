@@ -23,7 +23,7 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
         StreamSyncBurst {mustBeFloat, mustBeFinite} = [3 -3]'
         PacketSyncBurst {mustBeFloat, mustBeFinite} = [3 -3]'
         FrameLength {mustBeInteger, mustBeFinite} = 192
-        ThresholdMetric (1,1) {mustBeFloat, mustBeReal, mustBeFinite, mustBeNonnegative} = 20
+        ThresholdMetric (1,1) {mustBeFloat, mustBeReal, mustBeFinite, mustBeNonnegative} = 7
     end
       
 
@@ -196,6 +196,8 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
             
             obj.pDataBuffer.write(x(:));
             buffer = obj.pDataBuffer.peek(obj.pDataBufferLength);
+            obj.commStarted = true;
+            obj.currentState = frameSyncState.PACKET;
 
             if obj.commStarted && obj.pSyncIndexBuffer < 0
                 switch obj.currentState
