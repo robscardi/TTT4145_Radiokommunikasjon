@@ -1,10 +1,16 @@
 
 Param = init();
 
+ilbc = load("audioStruct.mat",'ilbc');
+ilbc = ilbc.ilbc;
+ilbcMode=ilbc.ilbcMode;
+ilbcDatatype = ilbc.ilbcDatatype;
+
+
 function SimParams = init
 %
 %% General simulation parameters
-SimParams.Rsym = 9e3;             % Symbol rate in Hertz
+SimParams.Rsym = 2*9e3;             % Symbol rate in Hertz
 SimParams.ModulationOrder = 4;      % QPSK alphabet size
 SimParams.SymbolBitNumber = log2(SimParams.ModulationOrder);
 SimParams.Interpolation = 16;        % Interpolation factor
