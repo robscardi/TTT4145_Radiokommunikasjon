@@ -108,7 +108,7 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
                         obj.state = transmitEncoderStates.START;
                     end
                 case transmitEncoderStates.INITIALGARBAGE
-                    if (obj.counter == 20)
+                    if (obj.counter == 0)
                         obj.state = transmitEncoderStates.START;
                     end
                 case transmitEncoderStates.START
