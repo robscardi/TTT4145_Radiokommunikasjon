@@ -10,6 +10,7 @@ ilbcDatatype = ilbc.ilbcDatatype;
 function SimParams = init
 %
 %% General simulation parameters
+
 SimParams.Rsym = 2*9e3;             % Symbol rate in Hertz
 SimParams.ModulationOrder = 4;      % QPSK alphabet size
 SimParams.SymbolBitNumber = log2(SimParams.ModulationOrder);
