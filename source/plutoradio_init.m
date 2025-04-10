@@ -1,10 +1,12 @@
 
 Param = init();
+sound = start();
 
 ilbc = load("audioStruct.mat",'ilbc');
 ilbc = ilbc.ilbc;
 ilbcMode=ilbc.ilbcMode;
 ilbcDatatype = ilbc.ilbcDatatype;
+
 
 
 function SimParams = init
@@ -160,3 +162,29 @@ SimParams.PlutoCenterFrequency      = SimParams.Channels(1)*1e6;
     "D3", "7E", "B9", "05", "8F", "52", "AC", "DD", "14", "76", ...
     "29", "65", "BF", "08", "93"],1)';
 end 
+
+function audioVariables = start
+    [y,FS]=audioread("hts1a_3200.wav");
+    audioVariables.FS = FS;
+    output = y;
+    output(y < abs(1.0e-02)) = 0;
+    removedsilence=output(2037:20036);
+    %Transmit
+    scaled=round(removedsilence*255);
+    bitscaled=int2bit(scaled,8)';
+    %plot(bitscaled)
+    properorder = zeros(length(bitscaled)/200, 200);  % assuming length(bitscaled) is divisible by 200
+    
+    for i = 1:200:length(bitscaled)
+        row_idx = (i-1)/200 + 1;  % this gives 1,2,3,... as row index
+        properorder(row_idx, :) = bitscaled(i:i+199);
+    end
+    repeatingproperorder=repmat(properorder,25,1);
+    t = (0:0.2:3599.8)';  % Or t = (0:3599) * Ts if your timestep is Ts seconds
+    
+    % Build the structure
+    repeatingInput.time = t;
+    repeatingInput.signals.values = repeatingproperorder;
+    repeatingInput.signals.dimensions = 200;
+    audioVariables.Tx = repeatingInput;
+end
