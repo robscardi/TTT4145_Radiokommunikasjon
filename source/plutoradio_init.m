@@ -13,10 +13,10 @@ function SimParams = init
 %
 %% General simulation parameters
 
-SimParams.Rsym = 2*9e3;             % Symbol rate in Hertz
+SimParams.Rsym = 9e3;             % Symbol rate in Hertz
 SimParams.ModulationOrder = 4;      % QPSK alphabet size
 SimParams.SymbolBitNumber = log2(SimParams.ModulationOrder);
-SimParams.Interpolation = 16;        % Interpolation factor
+SimParams.Interpolation = 8;        % Interpolation factor
 SimParams.Decimation = 1;           % Decimation factor
 SimParams.Tsym = 1/SimParams.Rsym;  % Symbol time in sec
 SimParams.Fs   = SimParams.Rsym * SimParams.Interpolation; % Sample rate
