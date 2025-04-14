@@ -60,7 +60,7 @@ SimParams.PlutoFrameTime = SimParams.PlutoFrameLength / SimParams.PlutoFrontEndS
 SimParams.StopTime = 10;
 %% Channel Parameters
 SimParams.ChannelSpacing = 12.5e-3;
-Band900 = [915 928];
+Band900 = [915 921];
 Band24 = [2.4 2.5]*1e3;
 SimParams.Channels = [Band900(1):SimParams.ChannelSpacing:Band900(2) ...
     Band24(1):SimParams.ChannelSpacing:Band24(2) ] ...
