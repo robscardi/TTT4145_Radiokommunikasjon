@@ -19,7 +19,7 @@ SimParams.SymbolBitNumber = log2(SimParams.ModulationOrder);
 SimParams.Interpolation = 8;        % Interpolation factor
 SimParams.Decimation = 1;           % Decimation factor
 SimParams.Tsym = 1/SimParams.Rsym;  % Symbol time in sec
-SimParams.Fs   = SimParams.Rsym * SimParams.Interpolation; % Sample rate
+SimParams.Fs   = SimParams.Rsym * SimParams.Interpolation*2; % Sample rate
 
 %% Frame Specifications
 
@@ -59,8 +59,8 @@ SimParams.MaximumFrequencyOffset    = SimParams.Fs/SimParams.ModulationOrder;
 SimParams.PlutoFrameTime = SimParams.PlutoFrameLength / SimParams.PlutoFrontEndSampleRate;
 SimParams.StopTime = 10;
 %% Channel Parameters
-SimParams.ChannelSpacing = 12.5;
-Band900 = [902 928];
+SimParams.ChannelSpacing = 12.5e-3;
+Band900 = [915 928];
 Band24 = [2.4 2.5]*1e3;
 SimParams.Channels = [Band900(1):SimParams.ChannelSpacing:Band900(2) ...
     Band24(1):SimParams.ChannelSpacing:Band24(2) ] ...
@@ -181,7 +181,15 @@ function audioVariables = start
     end
     repeatingproperorder=repmat(properorder,25,1);
     t = (0:0.2:3599.8)';  % Or t = (0:3599) * Ts if your timestep is Ts seconds
-    
+    counter = (0:1:63)';
+    repeatingcounter = repmat(counter,281,1)';
+    repeatingcounter = reshape(repeatingcounter,[],1);
+    repeatingcounter = [repeatingcounter;(1:1:16)'];
+    repeatingcounter = int2bit(repeatingcounter',6)';
+    indicatorcounter.time = t;
+    indicatorcounter.signals.values = repeatingcounter;
+    indicatorcounter.signals.dimensions = 6;
+    audioVariables.Counter = indicatorcounter;
     % Build the structure
     repeatingInput.time = t;
     repeatingInput.signals.values = repeatingproperorder;
