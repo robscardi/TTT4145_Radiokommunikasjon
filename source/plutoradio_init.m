@@ -13,7 +13,7 @@ function SimParams = init
 %
 %% General simulation parameters
 
-SimParams.Rsym = 2*9.6e3;             % Symbol rate in Hertz
+SimParams.Rsym = 9.6e3;             % Symbol rate in Hertz
 SimParams.ModulationOrder = 4;      % QPSK alphabet size
 SimParams.SymbolBitNumber = log2(SimParams.ModulationOrder);
 SimParams.Interpolation = 8;        % Interpolation factor
@@ -168,6 +168,7 @@ SimParams.PlutoCenterFrequency      = SimParams.Channels(1)*1e6;
     SimParams.BERTsequence = zeros(200, 64);
     for i = 1:64
         a = pn();
+        %a = SimParams.Test;
         SimParams.BERTsequence(:,i) = a(:);
     end
 

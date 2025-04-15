@@ -111,7 +111,7 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
                 case transmitEncoderStates.PACKET
                     
                     curr_counter = int2bit(obj.packetCounter, 6);
-                    data = x(1:200, max(obj.secondInputSize, obj.packetCounter) );
+                    data = x(1:200, min(obj.secondInputSize, obj.packetCounter+1) );
                     ytemp = [data; curr_counter; zeros(34,1)];
                     obj.packetCounter = obj.packetCounter +1;
                     if(obj.packetCounter == 64)
