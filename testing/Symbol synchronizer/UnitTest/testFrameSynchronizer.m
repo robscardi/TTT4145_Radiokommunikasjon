@@ -24,7 +24,7 @@ classdef testFrameSynchronizer < matlab.unittest.TestCase
                 BERTSyncBurst = testCase.SyncBurstBERT, ...
                 StreamSyncBurst = testCase.SyncBurstStream, ...
                 PacketSyncBurst = testCase.SyncBurstPacket, ...
-                ThresholdMetric = 13);
+                ThresholdMetric = 7);
             
         end
     end
@@ -39,7 +39,7 @@ classdef testFrameSynchronizer < matlab.unittest.TestCase
         function Test_wo_noise(testCase)
             message = [testCase.SyncBurstPacket; mod_wrap(randi([0 1],184*2,1), "bit")];
             noise = randomNoise(1000);
-            header = repmat(testCase.Preamble, 192/2,1);
+            header = testCase.Preamble;
             LSF_mess = [testCase.SyncBurstLSF; mod_wrap(randi([0 1],184*2,1), "bit")];
             whole_message = [noise; header; noise; LSF_mess; noise; message; noise; message; noise; noise ];
             n_message = 0;
@@ -61,6 +61,37 @@ classdef testFrameSynchronizer < matlab.unittest.TestCase
             end
             assert(n_message == 2)
         end
+        
+        function Test_wo_noise_consecutives(testCase)
+            message = [testCase.SyncBurstPacket; mod_wrap(randi([0 1],184*2,1), "bit")];
+            header = testCase.Preamble;
+            LSF_mess = [testCase.SyncBurstLSF; mod_wrap(randi([0 1],184*2,1), "bit")];
+            whole_message = [header;LSF_mess; message; message; message; message; message; message;message];
+            n_message = 0;
+            n_iter = floor(length(whole_message)/192);
+            
+            %whole_message = awgn(whole_message, 20);
+
+            j = 1; k = 192;
+            for i=1:n_iter
+                [res, type] = testCase.DUT(whole_message(j:k));
+                if type == frameType.PACKET
+                    a = xcorr(res, message);
+                    max(abs(a));
+                    n_message = n_message +1;
+                    if ~(all(res == message))
+                        fprintf("%s", "message different from res")
+                        assert(false)
+                    end
+                end
+                j = j +192;
+                k = k +192;
+            end
+            fprintf("end cycle")
+            assert(n_message == 6)
+        end
+
+
     end
     
 end

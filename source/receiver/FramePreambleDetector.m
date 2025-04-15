@@ -196,8 +196,6 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
             
             obj.pDataBuffer.write(x(:));
             buffer = obj.pDataBuffer.peek(obj.pDataBufferLength);
-            obj.commStarted = true;
-            obj.currentState = frameSyncState.PACKET;
 
             if obj.commStarted && obj.pSyncIndexBuffer < 0
                 switch obj.currentState
@@ -233,14 +231,14 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
                         end
                 end
             elseif ~obj.commStarted
-                metric = xcorr(buffer, obj.PreamblePattern);
-                [value, idx] = max(abs(metric(1:obj.pDataBufferLength)));
-                %idx = idx - obj.FrameLength;
-                if value > 200 && idx > obj.FrameLength-1
-                    obj.discardFromBuffer(idx);
-                    obj.commStarted = true;
-                    obj.currentState = frameSyncState.LSF;
-                end
+                % metric = xcorr(buffer, obj.PreamblePattern);
+                % [value, idx] = max(abs(metric(1:obj.pDataBufferLength)));
+                % idx = idx - obj.FrameLength;
+                % if value > 150 && idx > obj.FrameLength-1
+                %     obj.discardFromBuffer(idx);
+                % end
+                obj.commStarted = true;
+                obj.currentState = frameSyncState.PACKET;
             end
 
         end
