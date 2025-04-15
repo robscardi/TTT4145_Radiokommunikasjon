@@ -35,14 +35,11 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
     
     properties (Access = private)
         counter
+        packetCounter
+        secondInputSize
     end
     
     properties (Constant, Access = private)
-        StartValues=[1,41,81,121,161,201];
-        GolayParts=[1,13,25,37];
-        OutputParts=[1,25,49,73];
-        additionalBits = 12;
-        P = hex2poly('0xC75');
         
     end
 
@@ -54,20 +51,7 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
         end
     end
     methods (Access = private)
-        function GDI = golayInput(obj, d,LSF)
-            i=mod(d-1,6)+1;
-            start=obj.StartValues(i);
-            Chunk=LSF(start:start+40-1);
-            obj.ChunkArray(d,:) = [Chunk,decToArray(i,1,8)];
-            for j=1:4
-                section=obj.GolayParts(j);
-                m=obj.ChunkArray(d,section:section+12-1);
-                v=mod(m*obj.G,2);
-                section=obj.OutputParts(j);
-                obj.Arrays(section:section+24-1) = v;
-            end
-            GDI=[0,obj.Arrays];
-        end
+       
 
     end
 
@@ -87,6 +71,8 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
             % Perform one-time calculations, such as computing constants
             obj.buffer = dsp.AsyncBuffer(10*obj.FrameLength);
             obj.counter = 0;
+            a = size(x);
+            obj.secondInputSize = a(2);
             
         end
 
@@ -94,12 +80,13 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
             % Initialize internal buffer and related properties
             obj.state = transmitEncoderStates.WAIT;
             obj.counter = 0;
+            obj.packetCounter = 0;
         end
         
         function [y, s] = stepImpl(obj,x, begin)
             % Implement algorithm. Calculate y as a function of input u and
             % internal or discrete states.
-            obj.buffer.write(x(:));
+            
             ytemp = zeros(obj.FrameLength, 1);
 
             switch obj.state
@@ -120,8 +107,17 @@ classdef (StrictDefaults) TransmitEncoder < matlab.System
                     obj.counter = 0;
                     % Golay encoding
                     obj.state = transmitEncoderStates.PACKET;
+                    obj.packetCounter = 0;
                 case transmitEncoderStates.PACKET
-                    ytemp = [obj.buffer.read(200); zeros(40,1)];
+                    
+                    curr_counter = int2bit(obj.packetCounter, 6);
+                    data = x(1:200, max(obj.secondInputSize, obj.packetCounter) );
+                    ytemp = [data; curr_counter; zeros(34,1)];
+                    obj.packetCounter = obj.packetCounter +1;
+                    if(obj.packetCounter == 64)
+                        obj.state = transmitEncoderStates.LSF;
+                    end
+
                     if ~begin
                         obj.state = transmitEncoderStates.EOT;
                     end

@@ -13,13 +13,13 @@ function SimParams = init
 %
 %% General simulation parameters
 
-SimParams.Rsym = 9e3;             % Symbol rate in Hertz
+SimParams.Rsym = 2*9.6e3;             % Symbol rate in Hertz
 SimParams.ModulationOrder = 4;      % QPSK alphabet size
 SimParams.SymbolBitNumber = log2(SimParams.ModulationOrder);
 SimParams.Interpolation = 8;        % Interpolation factor
 SimParams.Decimation = 1;           % Decimation factor
 SimParams.Tsym = 1/SimParams.Rsym;  % Symbol time in sec
-SimParams.Fs   = SimParams.Rsym * SimParams.Interpolation*2; % Sample rate
+SimParams.Fs   = SimParams.Rsym * SimParams.Interpolation; % Sample rate
 
 %% Frame Specifications
 
@@ -161,6 +161,16 @@ SimParams.PlutoCenterFrequency      = SimParams.Channels(1)*1e6;
     "A1", "3F", "C7", "2B", "E5", "9D", "84", "4C", "FA", "61", ...
     "D3", "7E", "B9", "05", "8F", "52", "AC", "DD", "14", "76", ...
     "29", "65", "BF", "08", "93"],1)';
+
+    pn = comm.PNSequence('Polynomial', 'x9+x5+1', 'InitialConditions', [zeros(1, 8) 1]);
+    pn.SamplesPerFrame = 200;
+    
+    SimParams.BERTsequence = zeros(200, 64);
+    for i = 1:64
+        a = pn();
+        SimParams.BERTsequence(:,i) = a(:);
+    end
+
 end 
 
 function audioVariables = start

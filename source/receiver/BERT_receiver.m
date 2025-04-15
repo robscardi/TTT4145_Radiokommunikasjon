@@ -27,6 +27,7 @@ classdef (StrictDefaults) BERT_receiver < matlab.System
     % Discrete state properties
     properties (DiscreteState)
         currentPacket
+        currentGlobalPacket
     end
 
 
@@ -79,11 +80,11 @@ classdef (StrictDefaults) BERT_receiver < matlab.System
             obj.skippedPackets = 0;
         end
         
-        function [tx, rx, skipped_packet] = stepImpl(obj,frame)
+        function [tx, rx, skipped_packet, number] = stepImpl(obj,frame)
             % Implement algorithm. Calculate y as a function of input u and
             % internal or discrete states.
             number = int64(bit2int(frame(201:200), 6));
-            if number > 63 || number < 1
+            if number > 63 || number < 0
                 fprintf("%s", "Error in packet number")
                 tx_temp = ones(obj.frameLength, 1);
                 rx_temp = zeros(obj.frameLength, 1);
@@ -91,10 +92,13 @@ classdef (StrictDefaults) BERT_receiver < matlab.System
             else
                 if obj.currentPacket == -1
                     obj.currentPacket = number;
+                    obj.currentGlobalPacket = number;
                     rx_temp = frame;
                     tx_temp = obj.Message(number);
                 else
-                    if number ~= obj.currentPacket +1
+                    if number == obj.currentPacket
+                        
+                    elseif number ~= obj.currentPacket +1
                         fprintf("%s%d", "Skipped packet number: ", number)
                         tx_temp = ones(obj.frameLength, 1);
                         rx_temp = zeros(obj.frameLength, 1);
@@ -155,33 +159,41 @@ classdef (StrictDefaults) BERT_receiver < matlab.System
             ds = struct([]);
         end
 
-        function varargout = getOutputSizeImpl(obj)
+        function [out,out2, out3, out4] = getOutputSizeImpl(obj)
             % Return size for each output port
-            varargout = {propagatedInputSize(obj,1), [1,1]};
+            out = propagatedInputSize(obj,1);
+            out2 = propagatedInputSize(obj,1);
+            out3 = [1 1];
+            out4 = [1 1];
         end
 
-        function [out, out2] = getOutputDataTypeImpl(obj)
+        function varargout = getOutputDataTypeImpl(obj)
             % Return data type for each output port
-            out = propagatedInputDataType(obj,1);
-            out2 = "boolean";
+            varargout =  {propagatedInputSize(obj,1), propagatedInputSize(obj,1), "double", "int32"};
+            
         end
 
         
 
-        function [out, out2] = isOutputComplexImpl(obj)
+        function [out,out2, out3, out4] = isOutputComplexImpl(obj)
             % Return true for each output port with complex data
            
             % Example: inherit complexity from first input port
             out = propagatedInputComplexity(obj,1);
             out2 = false;
+            out3 = false;
+            out4 = false;
+            
         end
 
-        function [out,out2] = isOutputFixedSizeImpl(obj)
+        function [out,out2, out3, out4] = isOutputFixedSizeImpl(obj)
             % Return true for each output port with fixed size
             
             % Example: inherit fixed-size status from first input port
             out = propagatedInputFixedSize(obj,1);
             out2 = true;
+            out3 = true;
+            out4 = true;
         end
 
         function [sz,dt,cp] = getDiscreteStateSpecificationImpl(obj,name)

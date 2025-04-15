@@ -170,7 +170,7 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
             obj.currentState = frameSyncState.NEUTRAL;
         end
         
-        function [y,type] = stepImpl(obj,x)
+        function [y,type] = stepImpl(obj,x, number)
             % Implement algorithm. Calculate y as a function of input u and
             % internal or discrete states.
             if obj.pSyncIndexBuffer > 0
@@ -196,6 +196,9 @@ classdef (StrictDefaults) FramePreambleDetector < matlab.System
             
             obj.pDataBuffer.write(x(:));
             buffer = obj.pDataBuffer.peek(obj.pDataBufferLength);
+            if number == 63
+                obj.currentState = frameSyncState.LSF;
+            end
 
             if obj.commStarted && obj.pSyncIndexBuffer < 0
                 switch obj.currentState
